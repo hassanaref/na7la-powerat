@@ -31,7 +31,14 @@ async def poll_devices_task():
             logger.error(f"Unexpected error in poll loop: {err}")
 
 
-async def run_tcp_server():
-    server = await asyncio.start_server(hub.handle_client, settings.HOST, settings.DEVICE_PORT)
-    logger.info(f"TCP Device Server listening on {settings.HOST}:{settings.DEVICE_PORT}")
-    return server
+async def run_tcp_servers():
+    ports = [settings.DEVICE_PORT, 21197]
+    servers = []
+    for p in sorted(set(ports)):
+        try:
+            s = await asyncio.start_server(hub.handle_client, settings.HOST, p)
+            logger.info(f"TCP Device Server listening on {settings.HOST}:{p}")
+            servers.append(s)
+        except Exception as err:
+            logger.error(f"Failed to bind TCP port {p}: {err}")
+    return servers

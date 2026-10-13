@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_db
-from app.device_server.server import run_tcp_server, poll_devices_task
+from app.device_server.server import run_tcp_servers, poll_devices_task
 from app.services.scheduler_service import scheduler_loop
 from app.services.energy_service import energy_logger_loop
 from app.bot.bot import start_bot, stop_bot
@@ -31,8 +31,8 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Powerk Backend & Database...")
     await init_db()
 
-    # 1. Start TCP Device Server (Port 10086)
-    tcp_server = await run_tcp_server()
+    # 1. Start TCP Device Servers (Ports 10086 and 21197)
+    tcp_servers = await run_tcp_servers()
     poll_task = asyncio.create_task(poll_devices_task())
 
     # 2. Start Scheduler & Energy Background Loops
@@ -58,9 +58,10 @@ async def lifespan(app: FastAPI):
     sched_task.cancel()
     energy_task.cancel()
 
-    # Close TCP server
-    tcp_server.close()
-    await tcp_server.wait_closed()
+    # Close TCP servers
+    for srv in tcp_servers:
+        srv.close()
+        await srv.wait_closed()
     logger.info("All services stopped.")
 
 
