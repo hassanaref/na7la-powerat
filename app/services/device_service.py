@@ -132,9 +132,29 @@ class DeviceService:
 
     @staticmethod
     async def claim_device(db: AsyncSession, mac: str, user_telegram_id: int) -> tuple[bool, str]:
+        mac = mac.upper()
         device = await DeviceService.get_device(db, mac)
         if not device:
-            return False, "الجهاز غير موجود. تأكد من عنوان الماك أو قم بتوصيله بالكهرباء أولاً."
+            device = Device(
+                mac=mac,
+                name=f"مشترك {mac[-4:]}",
+                model="MTTL-W01",
+                online=False,
+                owner_telegram_id=user_telegram_id,
+                last_seen=utcnow()
+            )
+            db.add(device)
+            await db.flush()
+            for ch in range(1, 5):
+                outlet = Outlet(
+                    device_mac=mac,
+                    channel=ch,
+                    name=f"مخرج {ch}",
+                    is_on=False
+                )
+                db.add(outlet)
+            await db.commit()
+            return True, f"تم ربط المشترك [{device.name}] بنجاح!"
 
         if device.owner_telegram_id and device.owner_telegram_id != user_telegram_id:
             return False, "هذا المشترك مربوط بالفعل بحساب مستخدم آخر."

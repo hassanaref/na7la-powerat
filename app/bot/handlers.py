@@ -434,12 +434,12 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start_command(update, context)
         return
 
-    # Check if user is trying to claim a MAC address (e.g. "AABBCCDDEEFF" or "AA:BB:CC:DD:EE:FF" or 6-12 hex chars)
-    clean_mac = re.sub(r"[:\-\s]", "", text).upper()
-    if 6 <= len(clean_mac) <= 12 and all(c in "0123456789ABCDEF" for c in clean_mac):
+    # Check if user is trying to claim a MAC address (e.g. "2CE0.32C6.E5E7", "2C:E0:32:C6:E5:E7", "2CE032C6E5E7")
+    clean_mac = re.sub(r"[^0-9A-Fa-f]", "", text).upper()
+    if 6 <= len(clean_mac) <= 12:
         matched_mac = None
         for dev_mac in hub.devices.keys():
-            if clean_mac in dev_mac:
+            if clean_mac in dev_mac or dev_mac in clean_mac:
                 matched_mac = dev_mac
                 break
 
@@ -448,7 +448,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 res = await db.execute(select(Device.mac))
                 all_macs = res.scalars().all()
                 for m in all_macs:
-                    if clean_mac in m:
+                    if clean_mac in m or m in clean_mac:
                         matched_mac = m
                         break
 
@@ -458,7 +458,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         async with AsyncSessionLocal() as db:
             ok, msg = await DeviceService.claim_device(db, matched_mac, user.telegram_id)
             if lang == "en":
-                msg = f"✅ Strip [{clean_mac}] successfully linked to your account!" if ok else f"❌ {msg}"
+                msg = f"✅ Smart Strip [{matched_mac}] linked successfully to your account!" if ok else f"❌ {msg}"
             await update.message.reply_text(msg)
             if ok:
                 await start_command(update, context)
