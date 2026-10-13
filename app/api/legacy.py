@@ -1,12 +1,17 @@
+import base64
 import secrets
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from pydantic import BaseModel
+from sqlalchemy import select, or_
 
 from app.config import settings, BASE_DIR
+from app.database import AsyncSessionLocal
+from app.models import User, Device, DeviceShare
 from app.device_server.hub import hub
+from app.services.auth_service import AuthService
 
 router = APIRouter(tags=["Legacy & Android App Compatibility"])
 
@@ -17,55 +22,111 @@ class LegacyOnOffRequest(BaseModel):
     on: bool
 
 
-def is_authorized(request: Request) -> bool:
-    token = settings.API_TOKEN
-    if not token:
-        return True
+def extract_token_from_request(request: Request) -> Optional[str]:
+    # 1. X-User-Token or X-Token header
+    token = request.headers.get("X-User-Token") or request.headers.get("X-Token")
+    if token:
+        return token.strip()
 
-    # 1. X-Token header
-    if secrets.compare_digest(request.headers.get("X-Token", ""), token):
-        return True
-
-    # 2. Query param ?t=
-    if secrets.compare_digest(request.query_params.get("t", ""), token):
-        return True
-
-    # 3. HTTP Basic Auth
+    # 2. Authorization Bearer
     auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:].strip()
     if auth.startswith("Basic "):
-        import base64
         try:
             user, _, password = base64.b64decode(auth[6:]).decode("utf-8").partition(":")
-            if secrets.compare_digest(password, token) or secrets.compare_digest(user, token):
-                return True
+            return password.strip() or user.strip()
         except Exception:
-            return False
+            pass
 
-    return False
+    # 3. Query params: ?user_token=, ?token=, ?t=
+    token = (
+        request.query_params.get("user_token")
+        or request.query_params.get("token")
+        or request.query_params.get("t")
+    )
+    if token:
+        return token.strip()
+
+    return None
+
+
+async def get_request_user(request: Request) -> Optional[User]:
+    token = extract_token_from_request(request)
+    if not token:
+        return None
+
+    # Check server admin token
+    if settings.API_TOKEN and secrets.compare_digest(token, settings.API_TOKEN):
+        return User(telegram_id=0, first_name="Admin", is_admin=True)
+
+    # Check user token in DB
+    return await AuthService.get_user_by_token(token)
+
+
+def is_authorized(request: Request) -> bool:
+    if not settings.API_TOKEN:
+        return True
+    token = extract_token_from_request(request)
+    return bool(token and secrets.compare_digest(token, settings.API_TOKEN))
 
 
 def verify_auth(request: Request):
     if not is_authorized(request):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="powerk: token required",
-            headers={"WWW-Authenticate": 'Basic realm="powerk"'}
+            detail="na7la: token required",
+            headers={"WWW-Authenticate": 'Basic realm="na7la"'}
         )
 
 
 @router.get("/api/state")
 async def legacy_get_state(request: Request):
-    verify_auth(request)
+    user = await get_request_user(request)
+    if settings.API_TOKEN and not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="na7la: token required",
+            headers={"WWW-Authenticate": 'Basic realm="na7la"'}
+        )
+
     snap = hub.snapshot()
     snap["local_ip"] = settings.effective_local_ip
     snap["port"] = settings.DEVICE_PORT
+
+    # Strict multi-tenancy: filter devices if not admin
+    if user and not user.is_admin:
+        async with AsyncSessionLocal() as db:
+            shares_stmt = select(DeviceShare.device_mac).where(DeviceShare.shared_telegram_id == user.telegram_id)
+            shares_res = await db.execute(shares_stmt)
+            shared_macs = set(shares_res.scalars().all())
+
+            stmt = select(Device.mac).where(
+                or_(
+                    Device.owner_telegram_id == user.telegram_id,
+                    Device.mac.in_(shared_macs)
+                )
+            )
+            res = await db.execute(stmt)
+            allowed_macs = set(res.scalars().all())
+
+        snap["devices"] = [d for d in snap["devices"] if d.get("mac", "").upper() in allowed_macs]
+
     return snap
 
 
 @router.post("/api/onoff")
 async def legacy_post_onoff(request: Request, payload: LegacyOnOffRequest):
-    verify_auth(request)
-    mac = payload.mac.upper()
+    user = await get_request_user(request)
+    if settings.API_TOKEN and not user:
+        raise HTTPException(status_code=401, detail={"error": "token required"})
+
+    mac = payload.mac.upper().replace(":", "").replace(".", "")
+
+    if user and not user.is_admin:
+        async with AsyncSessionLocal() as db:
+            await AuthService.verify_device_access(db, user, mac)
+
     outlet = payload.outlet
     on = payload.on
 

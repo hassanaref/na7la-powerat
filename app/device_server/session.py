@@ -42,10 +42,9 @@ class LiveDeviceState:
 
     @property
     def current_a(self) -> float:
-        if not self.voltage_v or self.voltage_v <= 0:
-            return 0.0
+        from app.services.protection_service import ProtectionService
         total_w = sum(o.power_w for o in self.outlets.values())
-        return round(total_w / self.voltage_v, 2)
+        return ProtectionService.calibrate_current(total_w, self.voltage_v)
 
     def snapshot(self) -> dict[str, Any]:
         outlets_list = [o.to_dict() for o in self.outlets.values()]

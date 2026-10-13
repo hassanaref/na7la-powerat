@@ -4,10 +4,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
@@ -20,6 +18,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,27 +28,42 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.DeviceThermostat
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Power
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -57,22 +71,26 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.ShortNavigationBar
-import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -90,18 +108,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -115,7 +133,6 @@ fun PowerkApp() {
     var showSplash by remember { mutableStateOf(true) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    // "mac:outlet" -> state we are switching to right now (optimistic UI while the strip answers)
     val pending = remember { mutableStateMapOf<String, Boolean>() }
 
     suspend fun refresh() {
@@ -139,7 +156,7 @@ fun PowerkApp() {
     LaunchedEffect(tab, Server.host, Server.port, Server.token) {
         while (true) {
             refresh()
-            delay(2000)
+            delay(2500)
         }
     }
 
@@ -159,22 +176,40 @@ fun PowerkApp() {
         }
     }
 
+    // Security Gate check
+    if (!Server.isUnlocked && (Server.pinCode.isNotBlank() || Server.biometricEnabled)) {
+        SecurityLockScreen(onUnlocked = { Server.isUnlocked = true })
+        return
+    }
+
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onBackground,
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                ShortNavigationBar {
-                    ShortNavigationBarItem(
+                NavigationBar {
+                    NavigationBarItem(
                         selected = tab == 0,
                         onClick = { tab = 0 },
                         icon = { Icon(Icons.Filled.Home, contentDescription = null) },
                         label = { Text(stringResource(R.string.tab_plugs)) },
                     )
-                    ShortNavigationBarItem(
+                    NavigationBarItem(
                         selected = tab == 1,
                         onClick = { tab = 1 },
+                        icon = { Icon(Icons.Filled.Shield, contentDescription = null) },
+                        label = { Text(stringResource(R.string.tab_protection)) },
+                    )
+                    NavigationBarItem(
+                        selected = tab == 2,
+                        onClick = { tab = 2 },
+                        icon = { Icon(Icons.Filled.Wifi, contentDescription = null) },
+                        label = { Text(stringResource(R.string.tab_setup)) },
+                    )
+                    NavigationBarItem(
+                        selected = tab == 3,
+                        onClick = { tab = 3 },
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                         label = { Text(stringResource(R.string.tab_settings)) },
                     )
@@ -192,18 +227,33 @@ fun PowerkApp() {
                 label = "tab",
                 modifier = Modifier.fillMaxSize().padding(padding),
             ) { current ->
-                if (current == 0) {
-                    PlugsScreen(
+                when (current) {
+                    0 -> PlugsScreen(
                         snapshot = snapshot,
                         error = error,
                         loading = loading,
                         pending = pending,
                         onRefresh = { scope.launch { refresh() } },
-                        onOpenSettings = { tab = 1 },
+                        onOpenSettings = { tab = 3 },
+                        onOpenSetup = { tab = 2 },
                         onCommand = { mac, outlet, on -> command(mac, outlet, on) },
                     )
-                } else {
-                    SettingsScreen()
+                    1 -> ProtectionScreen(
+                        snapshot = snapshot,
+                        onRefresh = { scope.launch { refresh() } }
+                    )
+                    2 -> SetupWizardScreen(
+                        onProvisioned = { mac ->
+                            scope.launch {
+                                try {
+                                    Api.claimStrip(Server.base, Server.token, mac)
+                                    refresh()
+                                    tab = 0
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    )
+                    else -> SettingsScreen(onRefreshStrips = { scope.launch { refresh() } })
                 }
             }
         }
@@ -215,7 +265,6 @@ fun PowerkApp() {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun Splash() {
     val appear = remember { Animatable(0f) }
@@ -231,7 +280,7 @@ private fun Splash() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 Modifier
-                    .size(150.dp)
+                    .size(140.dp)
                     .graphicsLayer {
                         val p = appear.value
                         scaleX = 0.62f + 0.38f * p
@@ -244,7 +293,7 @@ private fun Splash() {
                 Icon(
                     painter = painterResource(R.drawable.ic_launcher_foreground),
                     contentDescription = null,
-                    modifier = Modifier.size(150.dp),
+                    modifier = Modifier.size(140.dp),
                     tint = Color.Unspecified,
                 )
             }
@@ -252,23 +301,20 @@ private fun Splash() {
             Text(
                 stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
                 color = scheme.onSurface,
-                modifier = Modifier.graphicsLayer { alpha = appear.value },
             )
             Text(
                 stringResource(R.string.splash_tagline),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurfaceVariant,
-                modifier = Modifier.graphicsLayer { alpha = appear.value },
             )
-            Spacer(Modifier.height(38.dp))
-            CircularWavyProgressIndicator(Modifier.size(30.dp))
+            Spacer(Modifier.height(30.dp))
+            CircularProgressIndicator(Modifier.size(32.dp))
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PlugsScreen(
     snapshot: Snapshot?,
@@ -277,9 +323,11 @@ private fun PlugsScreen(
     pending: Map<String, Boolean>,
     onRefresh: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenSetup: () -> Unit,
     onCommand: (String, Int, Boolean) -> Unit,
 ) {
     val strips = snapshot?.strips.orEmpty()
+    var editingOutlet by remember { mutableStateOf<Pair<Strip, Outlet>?>(null) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -316,13 +364,22 @@ private fun PlugsScreen(
                 )
             }
         } else {
+            if (strips.isNotEmpty()) {
+                item {
+                    ScenesBar(
+                        strips = strips,
+                        onCommand = onCommand
+                    )
+                }
+            }
+
             items(strips, key = { it.mac }) { strip ->
                 StripCard(
                     strip = strip,
                     showMac = strips.size > 1,
                     pending = pending,
                     onCommand = onCommand,
-                    modifier = Modifier.animateItem(),
+                    onEditOutlet = { outlet -> editingOutlet = Pair(strip, outlet) }
                 )
             }
 
@@ -331,26 +388,24 @@ private fun PlugsScreen(
                     EmptyState(
                         title = stringResource(R.string.no_strip_title),
                         body = stringResource(R.string.no_strip_body),
+                        action = stringResource(R.string.tab_setup),
+                        onAction = onOpenSetup,
                     )
                 }
             }
-
-            if (snapshot == null && error == null) {
-                item {
-                    Column(
-                        Modifier.fillMaxWidth().padding(top = 60.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        CircularWavyProgressIndicator(Modifier.size(34.dp))
-                        Spacer(Modifier.height(14.dp))
-                        Text(
-                            stringResource(R.string.connecting, Server.host),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-            }
         }
+    }
+
+    editingOutlet?.let { (strip, outlet) ->
+        OutletEditDialog(
+            strip = strip,
+            outlet = outlet,
+            onDismiss = { editingOutlet = null },
+            onSaved = {
+                editingOutlet = null
+                onRefresh()
+            }
+        )
     }
 }
 
@@ -374,7 +429,7 @@ private fun Header(
             Text(
                 stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
             )
             val subtitle = when {
                 !configured -> stringResource(R.string.header_no_server)
@@ -394,28 +449,86 @@ private fun Header(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ScenesBar(
+    strips: List<Strip>,
+    onCommand: (String, Int, Boolean) -> Unit
+) {
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(R.string.scenes_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    Button(
+                        onClick = {
+                            strips.forEach { s ->
+                                onCommand(s.mac, 1, true)
+                                onCommand(s.mac, 2, true)
+                                onCommand(s.mac, 3, true)
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text(stringResource(R.string.scene_work)) }
+                }
+                item {
+                    FilledTonalButton(
+                        onClick = {
+                            strips.forEach { s ->
+                                onCommand(s.mac, 1, true) // keep router
+                                onCommand(s.mac, 2, false)
+                                onCommand(s.mac, 3, false)
+                                onCommand(s.mac, 4, false)
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text(stringResource(R.string.scene_sleep)) }
+                }
+                item {
+                    FilledTonalButton(
+                        onClick = {
+                            strips.forEach { s ->
+                                onCommand(s.mac, 3, true) // TV
+                                onCommand(s.mac, 4, false)
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text(stringResource(R.string.scene_cinema)) }
+                }
+                item {
+                    OutlinedButton(
+                        onClick = { strips.forEach { s -> onCommand(s.mac, 0, true) } },
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text(stringResource(R.string.scene_all_on)) }
+                }
+                item {
+                    OutlinedButton(
+                        onClick = { strips.forEach { s -> onCommand(s.mac, 0, false) } },
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text(stringResource(R.string.scene_all_off)) }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun StripCard(
     strip: Strip,
     showMac: Boolean,
     pending: Map<String, Boolean>,
     onCommand: (String, Int, Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+    onEditOutlet: (Outlet) -> Unit,
 ) {
     val stateOf: (Int) -> Boolean = { n -> pending["${strip.mac}:$n"] ?: strip.outletOn(n) }
     val anyOn = (1..4).any(stateOf)
-    val allPending = (1..4).any { pending.containsKey("${strip.mac}:$it") }
 
-    ElevatedCard(modifier.fillMaxWidth()) {
+    ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StatusDot(online = strip.online)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    val title = stringResource(R.string.strip_name) +
-                        if (showMac) " · ${strip.mac.takeLast(7)}" else ""
+                    val title = strip.name + if (showMac) " · ${strip.mac.takeLast(6)}" else ""
                     Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                     Text(
                         stringResource(R.string.strip_fw, strip.fw),
@@ -423,385 +536,685 @@ private fun StripCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                Button(
+                    onClick = { onCommand(strip.mac, 0, !anyOn) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (anyOn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(if (anyOn) stringResource(R.string.turn_all_off) else stringResource(R.string.turn_all_on))
+                }
             }
 
+            // Power Metrics Bar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 PowerRing(watts = strip.powerW, enabled = strip.online)
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MetricPill("${strip.energyKwh} kWh")
-                    strip.voltage?.let { MetricPill("${it.roundToInt()} V") }
-                    strip.currentA?.let { MetricPill("$it A") }
-                    strip.rssi?.let { MetricPill("$it dBm") }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricPill("${strip.energyKwh} kWh")
+                        strip.voltage?.let { MetricPill("${it.roundToInt()} V") }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        strip.currentA?.let { MetricPill("$it A") }
+                        strip.rssi?.let { MetricPill("$it dBm") }
+                    }
                 }
             }
 
-            for (row in 0 until 2) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    for (column in 0 until 2) {
-                        val outlet = strip.outlets.getOrNull(row * 2 + column)
-                        if (outlet == null) {
-                            Spacer(Modifier.weight(1f))
-                        } else {
-                            OutletTile(
-                                outlet = outlet,
-                                on = stateOf(outlet.n),
-                                pending = pending.containsKey("${strip.mac}:${outlet.n}"),
-                                enabled = strip.online,
-                                onToggle = { onCommand(strip.mac, outlet.n, it) },
-                                modifier = Modifier.weight(1f),
-                            )
+            // 4 Outlets Grid (2x2)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                for (row in 0 until 2) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        for (col in 0 until 2) {
+                            val outlet = strip.outlets.getOrNull(row * 2 + col)
+                            if (outlet != null) {
+                                Box(Modifier.weight(1f)) {
+                                    OutletTile(
+                                        outlet = outlet,
+                                        on = stateOf(outlet.n),
+                                        onToggle = { onCommand(strip.mac, outlet.n, !stateOf(outlet.n)) },
+                                        onEdit = { onEditOutlet(outlet) }
+                                    )
+                                }
+                            } else {
+                                Spacer(Modifier.weight(1f))
+                            }
                         }
                     }
                 }
             }
-
-            FilledTonalButton(
-                onClick = { onCommand(strip.mac, 0, !anyOn) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                enabled = strip.online && !allPending,
-            ) {
-                if (allPending) {
-                    CircularWavyProgressIndicator(Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
-                }
-                Text(
-                    stringResource(if (anyOn) R.string.turn_all_off else R.string.turn_all_on),
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun OutletTile(
     outlet: Outlet,
     on: Boolean,
-    pending: Boolean,
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+    onToggle: () -> Unit,
+    onEdit: () -> Unit
 ) {
-    val scheme = MaterialTheme.colorScheme
-    val haptics = LocalHapticFeedback.current
-    val progress by animateFloatAsState(
-        targetValue = if (on) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
-        label = "toggle",
-    )
-    val container = lerp(scheme.surfaceContainerHighest, scheme.primaryContainer, progress)
-    val content = lerp(scheme.onSurface, scheme.onPrimaryContainer, progress)
+    val bg = if (on) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+    val contentColor = if (on) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
-    Surface(
-        onClick = {
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            onToggle(!on)
-        },
-        enabled = enabled && !pending,
-        shape = MaterialTheme.shapes.large,
-        color = container,
-        contentColor = content,
-        modifier = modifier
-            .heightIn(min = 96.dp)
-            .graphicsLayer {
-                val pop = 1f + 0.015f * progress
-                scaleX = pop
-                scaleY = pop
-            },
+    Card(
+        colors = CardDefaults.cardColors(containerColor = bg, contentColor = contentColor),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle() }
     ) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    stringResource(R.string.outlet_n, outlet.n),
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.weight(1f),
+                Icon(
+                    getOutletIcon(outlet.icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(26.dp),
+                    tint = if (on) MaterialTheme.colorScheme.primary else contentColor
                 )
-                // while the strip is answering, the switch becomes a spinner
-                AnimatedContent(
-                    targetState = pending,
-                    transitionSpec = { fadeIn(tween(160)) togetherWith fadeOut(tween(120)) },
-                    label = "switch-pending",
-                ) { isPending ->
-                    if (isPending) {
-                        CircularWavyProgressIndicator(Modifier.size(22.dp))
-                    } else {
-                        MiniSwitch(progress = progress, onColor = scheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    outlet.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1
+                )
+                IconButton(onClick = onEdit, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    if (on) stringResource(R.string.state_on) else stringResource(R.string.state_off),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Text(
+                    if (on) "${outlet.powerW.roundToInt()} W" else "${outlet.tempC}°C",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+fun getOutletIcon(name: String): ImageVector = when (name.lowercase()) {
+    "router" -> Icons.Filled.Router
+    "pc", "computer" -> Icons.Filled.Computer
+    "tv" -> Icons.Filled.Tv
+    "lamp", "light" -> Icons.Filled.Lightbulb
+    else -> Icons.Filled.Power
+}
+
+@Composable
+private fun OutletEditDialog(
+    strip: Strip,
+    outlet: Outlet,
+    onDismiss: () -> Unit,
+    onSaved: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var name by remember { mutableStateOf(outlet.name) }
+    var selectedIcon by remember { mutableStateOf(outlet.icon) }
+    var autoOffMins by remember { mutableStateOf(outlet.autoOffMinutes.toString()) }
+    var standbyW by remember { mutableStateOf(outlet.standbyCutoffW.toString()) }
+    var busy by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("تخصيص المخرج ${outlet.n}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("اسم المخرج (مثل: الراوتر، الكمبيوتر)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Text("الأيقونة:", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("outlet", "router", "pc", "tv", "lamp").forEach { ic ->
+                        IconButton(
+                            onClick = { selectedIcon = ic },
+                            modifier = Modifier
+                                .background(
+                                    if (selectedIcon == ic) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(getOutletIcon(ic), contentDescription = ic)
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = autoOffMins,
+                    onValueChange = { autoOffMins = it.filter(Char::isDigit) },
+                    label = { Text("إطفاء تلقائي بعد (دقائق - 0 للتعطيل)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = standbyW,
+                    onValueChange = { standbyW = it },
+                    label = { Text("فصل عند الخمول أقل من (وات - 0 للتعطيل)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = !busy,
+                onClick = {
+                    busy = true
+                    scope.launch {
+                        try {
+                            Api.updateOutletSmart(
+                                base = Server.base,
+                                token = Server.token,
+                                mac = strip.mac,
+                                channel = outlet.n,
+                                name = name,
+                                icon = selectedIcon,
+                                autoOffMinutes = autoOffMins.toIntOrNull() ?: 0,
+                                standbyCutoffW = standbyW.toDoubleOrNull() ?: 0.0
+                            )
+                            onSaved()
+                        } catch (_: Exception) {
+                            busy = false
+                        }
+                    }
+                }
+            ) { Text("حفظ") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("إلغاء") }
+        }
+    )
+}
+
+@Composable
+private fun ProtectionScreen(
+    snapshot: Snapshot?,
+    onRefresh: () -> Unit
+) {
+    val strip = snapshot?.strips?.firstOrNull()
+    val scope = rememberCoroutineScope()
+    var minV by remember { mutableDoubleStateOf(strip?.minVoltage ?: 190.0) }
+    var maxV by remember { mutableDoubleStateOf(strip?.maxVoltage ?: 245.0) }
+    var maxW by remember { mutableDoubleStateOf(strip?.maxPowerW ?: 3200.0) }
+    var childLock by remember { mutableStateOf(strip?.childLockEnabled ?: false) }
+    var awayMode by remember { mutableStateOf(strip?.awayModeEnabled ?: false) }
+    var routerCh by remember { mutableIntStateOf(strip?.surgeRouterChannel ?: 1) }
+    var saving by remember { mutableStateOf(false) }
+    var savedMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(strip) {
+        if (strip != null) {
+            minV = strip.minVoltage
+            maxV = strip.maxVoltage
+            maxW = strip.maxPowerW
+            childLock = strip.childLockEnabled
+            awayMode = strip.awayModeEnabled
+            routerCh = strip.surgeRouterChannel
+        }
+    }
+
+    fun save() {
+        if (strip == null) return
+        saving = true
+        scope.launch {
+            try {
+                Api.updateProtection(
+                    base = Server.base,
+                    token = Server.token,
+                    settings = ProtectionSettings(
+                        mac = strip.mac,
+                        minVoltage = minV,
+                        maxVoltage = maxV,
+                        maxPowerW = maxW,
+                        childLockEnabled = childLock,
+                        awayModeEnabled = awayMode,
+                        surgeRouterChannel = routerCh
+                    )
+                )
+                savedMessage = "تم حفظ إعدادات الحماية بنجاح!"
+                onRefresh()
+            } catch (e: Exception) {
+                savedMessage = "فشل الحفظ: ${e.message}"
+            }
+            saving = false
+        }
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            stringResource(R.string.protection_title),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            stringResource(R.string.protection_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        if (strip == null) {
+            MessageCard("لا يوجد مشترك متصل لتعديل إعدادات الحماية.", isError = true, icon = Icons.Filled.Warning)
+            return
+        }
+
+        // Live Voltage Guard Card
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Bolt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.voltage_guard), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                Text(stringResource(R.string.voltage_guard_desc), style = MaterialTheme.typography.bodySmall)
+
+                Text("الحد الأدنى للجهد: ${minV.roundToInt()} فولت")
+                Slider(
+                    value = minV.toFloat(),
+                    onValueChange = { minV = it.toDouble().roundToInt().toDouble() },
+                    valueRange = 160f..210f,
+                    steps = 50
+                )
+
+                Text("الحد الأقصى للجهد: ${maxV.roundToInt()} فولت")
+                Slider(
+                    value = maxV.toFloat(),
+                    onValueChange = { maxV = it.toDouble().roundToInt().toDouble() },
+                    valueRange = 230f..260f,
+                    steps = 30
+                )
+            }
+        }
+
+        // Overload Limit Card
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.overload_limit), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                Text(stringResource(R.string.overload_desc), style = MaterialTheme.typography.bodySmall)
+                Text("أقصى حمل مسموح: ${maxW.roundToInt()} وات")
+                Slider(
+                    value = maxW.toFloat(),
+                    onValueChange = { maxW = it.toDouble().roundToInt().toDouble() },
+                    valueRange = 1000f..3500f,
+                    steps = 25
+                )
+            }
+        }
+
+        // Child Lock & Cold Boot Router Card
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.child_lock), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.child_lock_desc), style = MaterialTheme.typography.bodySmall)
+                    }
+                    Switch(checked = childLock, onCheckedChange = { childLock = it })
+                }
+
+                HorizontalDivider()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.cold_boot_router), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.cold_boot_desc), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (1..4).forEach { ch ->
+                        FilledTonalButton(
+                            onClick = { routerCh = ch },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = if (routerCh == ch) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Text("المخرج $ch")
+                        }
+                    }
+                }
+
+                HorizontalDivider()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.away_mode), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.away_mode_desc), style = MaterialTheme.typography.bodySmall)
+                    }
+                    Switch(checked = awayMode, onCheckedChange = { awayMode = it })
+                }
+            }
+        }
+
+        Button(
+            onClick = { save() },
+            enabled = !saving,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("حفظ وتطبيق إعدادات الحماية")
+        }
+
+        savedMessage?.let { msg ->
+            Text(msg, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+private fun SetupWizardScreen(
+    onProvisioned: (String) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var ssid by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var serverIp by remember { mutableStateOf(Server.host) }
+    var warningSpecial by remember { mutableStateOf<String?>(null) }
+    var currentStep by remember { mutableStateOf<ProvisionStep>(ProvisionStep.Idle) }
+    var countdown by remember { mutableIntStateOf(25) }
+
+    LaunchedEffect(password) {
+        warningSpecial = if (password.contains("*") || password.contains("/") || password.contains(":")) {
+            "⚠️ تحذير: فيرموير المشترك يتعطل إذا كانت كلمة السر تحتوي على * أو /. استخدم حروفاً وأرقاماً فقط!"
+        } else null
+    }
+
+    fun startProvisioning() {
+        scope.launch {
+            ProvisioningService.provision(
+                serverIp = serverIp,
+                ssid = ssid,
+                password = password,
+                onProgress = { step ->
+                    currentStep = step
+                    if (step is ProvisionStep.PowerCyclePrompt) {
+                        countdown = step.countdownSeconds
+                    }
+                }
+            )
+        }
+    }
+
+    LaunchedEffect(currentStep) {
+        if (currentStep is ProvisionStep.PowerCyclePrompt) {
+            while (countdown > 0) {
+                delay(1000)
+                countdown--
+            }
+            currentStep = ProvisionStep.Success("اكتملت التهيئة بنجاح! المشترك يتصل الآن بالسيرفر.")
+        }
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            stringResource(R.string.prov_title),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        // Step 1
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.prov_step1_title), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.prov_step1_body), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+
+        // Step 2
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.prov_step2_title), fontWeight = FontWeight.Bold)
+
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    OutlinedTextField(
+                        value = ssid,
+                        onValueChange = { ssid = it },
+                        label = { Text(stringResource(R.string.prov_ssid)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(stringResource(R.string.prov_password)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = serverIp,
+                        onValueChange = { serverIp = it },
+                        label = { Text(stringResource(R.string.prov_server_ip)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (warningSpecial != null) {
+                    Text(
+                        warningSpecial!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Button(
+                    onClick = { startProvisioning() },
+                    enabled = ssid.isNotBlank() && password.isNotBlank() && warningSpecial == null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.prov_btn_send))
+                }
+            }
+        }
+
+        // Status Card
+        when (val s = currentStep) {
+            is ProvisionStep.Connecting -> MessageCard(s.message, isError = false, icon = Icons.Filled.Wifi)
+            is ProvisionStep.SendingIp -> MessageCard(s.message, isError = false, icon = Icons.Filled.Wifi)
+            is ProvisionStep.SendingWifi -> MessageCard(s.message, isError = false, icon = Icons.Filled.Wifi)
+            is ProvisionStep.PowerCyclePrompt -> {
+                ElevatedCard(Modifier.fillMaxWidth(), colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            stringResource(R.string.prov_cycle_reminder),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            "$countdown ثانية",
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
                     }
                 }
             }
-            Text(
-                stringResource(if (on) R.string.state_on else R.string.state_off),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                if (on) {
-                    stringResource(R.string.tile_on_detail, outlet.powerW.toString(), outlet.tempC)
-                } else {
-                    stringResource(R.string.tile_off_detail, outlet.tempC)
-                },
-                style = MaterialTheme.typography.labelSmall,
-            )
-        }
-    }
-}
-
-/** Small animated switch drawn inside an outlet tile: track + sliding thumb. */
-@Composable
-private fun MiniSwitch(progress: Float, onColor: Color) {
-    val scheme = MaterialTheme.colorScheme
-    val track = lerp(scheme.outlineVariant, onColor, progress)
-    val thumb = lerp(scheme.surfaceContainerLowest, scheme.onPrimary, progress)
-
-    Box(
-        Modifier
-            .size(width = 38.dp, height = 22.dp)
-            .clip(CircleShape)
-            .background(track),
-    ) {
-        Box(
-            Modifier
-                .offset(x = (2 + 16 * progress).dp, y = 2.dp)
-                .size(18.dp)
-                .clip(CircleShape)
-                .background(thumb),
-        )
-    }
-}
-
-@Composable
-private fun PowerRing(watts: Double, enabled: Boolean) {
-    val target = (watts / 2000.0).coerceIn(0.0, 1.0).toFloat()
-    val sweep by animateFloatAsState(
-        targetValue = target,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow),
-        label = "sweep",
-    )
-    val scheme = MaterialTheme.colorScheme
-    val track = scheme.surfaceContainerHighest
-    val arc = if (enabled && watts > 0.05) scheme.primary else scheme.outlineVariant
-
-    Box(Modifier.size(142.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize()) {
-            val stroke = 12.dp.toPx()
-            val inset = stroke / 2f
-            val arcSize = Size(size.width - stroke, size.height - stroke)
-            drawArc(
-                color = track,
-                startAngle = 135f,
-                sweepAngle = 270f,
-                useCenter = false,
-                topLeft = Offset(inset, inset),
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round),
-            )
-            drawArc(
-                color = arc,
-                startAngle = 135f,
-                sweepAngle = 270f * sweep,
-                useCenter = false,
-                topLeft = Offset(inset, inset),
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round),
-            )
-        }
-        // fixed-width inner column keeps the numbers clear of the ring stroke
-        Column(
-            Modifier.width(92.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    "${watts.roundToInt()}",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    stringResource(R.string.unit_watts),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = scheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 6.dp),
-                )
+            is ProvisionStep.Success -> {
+                MessageCard(s.message, isError = false, icon = Icons.Filled.Check)
             }
-            Text(
-                stringResource(R.string.watts_now),
-                style = MaterialTheme.typography.labelSmall,
-                color = scheme.onSurfaceVariant,
-                maxLines = 1,
-            )
+            is ProvisionStep.Error -> {
+                MessageCard(s.error, isError = true, icon = Icons.Filled.Warning)
+            }
+            else -> {}
         }
     }
 }
 
 @Composable
-private fun MetricPill(value: String) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-    ) {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Text(
-                value,
-                Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                softWrap = false,
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatusDot(online: Boolean) {
-    val pulse = rememberInfiniteTransition(label = "dot")
-    val alpha by pulse.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
-        label = "alpha",
-    )
-    Box(
-        Modifier
-            .size(11.dp)
-            .graphicsLayer { this.alpha = if (online) 1f else alpha }
-            .background(
-                if (online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                CircleShape,
-            )
-    )
-}
-
-@Composable
-private fun MessageCard(text: String, isError: Boolean, icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
-    Card(
-        Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isError) MaterialTheme.colorScheme.errorContainer
-            else MaterialTheme.colorScheme.surfaceContainerHighest,
-            contentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer
-            else MaterialTheme.colorScheme.onSurface,
-        ),
-    ) {
-        Row(
-            Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (icon != null) Icon(icon, contentDescription = null)
-            Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun EmptyState(title: String, body: String, action: String? = null, onAction: (() -> Unit)? = null) {
-    Column(
-        Modifier.fillMaxWidth().padding(top = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
-            Icon(
-                Icons.Filled.Info,
-                contentDescription = null,
-                modifier = Modifier.padding(18.dp).size(30.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(Modifier.height(16.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 12.dp),
-        )
-        if (action != null && onAction != null) {
-            Spacer(Modifier.height(18.dp))
-            Button(onClick = onAction) { Text(action) }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun SettingsScreen() {
+private fun SettingsScreen(
+    onRefreshStrips: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var host by remember { mutableStateOf(Server.host) }
     var port by remember { mutableStateOf(Server.port.toString()) }
     var token by remember { mutableStateOf(Server.token) }
+    var lang by remember { mutableStateOf(Lang.code) }
     var status by remember { mutableStateOf<String?>(null) }
     var statusOk by remember { mutableStateOf(false) }
-    var busy by remember { mutableStateOf(false) }
-    var lang by remember { mutableStateOf(Lang.code) }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+    var claimMac by remember { mutableStateOf("") }
+    var pinSetting by remember { mutableStateOf(Server.pinCode) }
+    var biometricSetting by remember { mutableStateOf(Server.biometricEnabled) }
 
-    fun commit() = Server.save(host, port.toIntOrNull() ?: 8080, token)
+    fun commitServer() = Server.saveServer(host, port.toIntOrNull() ?: 8080, token)
+    fun commitSecurity() = Server.saveSecurity(pinSetting, biometricSetting)
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp),
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
         )
 
+        // Account & Multi-Tenancy Card
         ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    stringResource(R.string.language_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                val options = listOf(
-                    null to stringResource(R.string.lang_system),
-                    "en" to stringResource(R.string.lang_english),
-                    "ar" to stringResource(R.string.lang_arabic),
-                )
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    options.forEachIndexed { index, (value, label) ->
-                        SegmentedButton(
-                            selected = lang == value,
-                            onClick = {
-                                if (lang != value) {
-                                    lang = value
-                                    Lang.set(context, value)
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.account_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("معرف الحساب / Token الخاص بك: ${Server.token.take(16)}...", style = MaterialTheme.typography.bodySmall)
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    val res = Api.signup(Server.base, "مستخدم جديد", null, null)
+                                    val newToken = res.getString("user_token")
+                                    token = newToken
+                                    Server.saveUser("User", "", newToken)
+                                    status = "تم إنشاء الحساب بنجاح!"
+                                    statusOk = true
+                                    onRefreshStrips()
+                                } catch (e: Exception) {
+                                    status = "فشل إنشاء الحساب: ${e.message}"
+                                    statusOk = false
                                 }
-                            },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                        ) { Text(label) }
-                    }
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text(stringResource(R.string.btn_signup)) }
+                }
+
+                HorizontalDivider()
+
+                Text(stringResource(R.string.claim_strip), fontWeight = FontWeight.Bold)
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    OutlinedTextField(
+                        value = claimMac,
+                        onValueChange = { claimMac = it.uppercase() },
+                        label = { Text(stringResource(R.string.field_mac)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                val res = Api.claimStrip(Server.base, Server.token, claimMac)
+                                status = res.optString("message", "تم ربط المشترك بحسابك!")
+                                statusOk = true
+                                onRefreshStrips()
+                            } catch (e: Exception) {
+                                status = "تعذر ربط المشترك: ${e.message}"
+                                statusOk = false
+                            }
+                        }
+                    },
+                    enabled = claimMac.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("ربط هذا المشترك بحسابي") }
+            }
+        }
+
+        // Security Lock Card
+        ElevatedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.security_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                OutlinedTextField(
+                    value = pinSetting,
+                    onValueChange = { pinSetting = it.filter(Char::isDigit).take(8) },
+                    label = { Text(stringResource(R.string.set_pin)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(stringResource(R.string.biometric_enable))
+                    Switch(checked = biometricSetting, onCheckedChange = { biometricSetting = it })
+                }
+                Button(onClick = { commitSecurity(); status = "تم تحديث إعدادات الأمان!"; statusOk = true }) {
+                    Text(stringResource(R.string.save))
                 }
             }
         }
 
+        // Server Connection Card
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    stringResource(R.string.server_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    stringResource(R.string.server_body),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                // technical values stay left-to-right even in RTL locales
+                Text(stringResource(R.string.server_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.server_body), style = MaterialTheme.typography.bodySmall)
+
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     OutlinedTextField(
                         value = host,
@@ -831,109 +1244,162 @@ private fun SettingsScreen() {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = {
-                            commit()
+                            commitServer()
                             status = context.getString(R.string.saved)
                             statusOk = true
                         },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.save)) }
                     FilledTonalButton(
-                        enabled = !busy,
                         onClick = {
-                            commit()
-                            busy = true
-                            status = null
+                            commitServer()
                             scope.launch {
                                 try {
                                     val snap = Api.snapshot(Server.base, Server.token)
-                                    status = context.getString(
-                                        R.string.connected_summary,
-                                        snap.strips.size,
-                                        snap.strips.count { it.online },
-                                    )
+                                    status = context.getString(R.string.connected_summary, snap.strips.size, snap.strips.count { it.online })
                                     statusOk = true
                                 } catch (e: Exception) {
                                     status = e.message ?: "connection failed"
                                     statusOk = false
                                 }
-                                busy = false
                             }
                         },
                         modifier = Modifier.weight(1f),
                     ) { Text(stringResource(R.string.test)) }
                 }
-                if (busy) CircularWavyProgressIndicator(Modifier.fillMaxWidth())
-                AnimatedVisibility(visible = status != null, enter = fadeIn(), exit = fadeOut()) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = if (statusOk) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.errorContainer,
-                        contentColor = if (statusOk) MaterialTheme.colorScheme.onPrimaryContainer
-                        else MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(status ?: "", Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-                OutlinedButton(
-                    onClick = {
-                        commit()
-                        context.startActivity(
-                            android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse(Server.base),
-                            )
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = Server.configured,
-                ) { Text(stringResource(R.string.open_web_ui)) }
             }
         }
 
+        // Language Switcher Card
         ElevatedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    stringResource(R.string.setup_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(stringResource(R.string.language_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                val options = listOf(
+                    null to stringResource(R.string.lang_system),
+                    "en" to stringResource(R.string.lang_english),
+                    "ar" to stringResource(R.string.lang_arabic),
                 )
-                SetupStep(1, stringResource(R.string.setup_step_1))
-                SetupStep(2, stringResource(R.string.setup_step_2))
-                SetupStep(3, stringResource(R.string.setup_step_3))
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    Text(
-                        "python powerk.py provision --ip <ip> --ssid WIFI --password PW",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 30.dp),
-                    )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    options.forEachIndexed { index, (value, label) ->
+                        SegmentedButton(
+                            selected = lang == value,
+                            onClick = {
+                                if (lang != value) {
+                                    lang = value
+                                    Lang.set(context, value)
+                                }
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                        ) { Text(label) }
+                    }
                 }
-                SetupStep(4, stringResource(R.string.setup_step_4))
-                HorizontalDivider(Modifier.padding(vertical = 4.dp))
-                Text(
-                    stringResource(R.string.setup_footer),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
+        }
+
+        status?.let {
+            MessageCard(it, isError = !statusOk, icon = if (statusOk) Icons.Filled.Check else Icons.Filled.Warning)
         }
     }
 }
 
 @Composable
-private fun SetupStep(number: Int, text: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(22.dp),
+private fun StatusDot(online: Boolean) {
+    val color = if (online) Color(0xFF10B981) else Color(0xFFEF4444)
+    Box(
+        Modifier
+            .size(10.dp)
+            .background(color, CircleShape)
+    )
+}
+
+@Composable
+private fun MetricPill(text: String) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    ) {
+        Text(
+            text,
+            Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun PowerRing(watts: Double, enabled: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    val trackColor = scheme.surfaceVariant
+    val activeColor = if (enabled) scheme.primary else scheme.outlineVariant
+
+    Box(Modifier.size(100.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val stroke = 8.dp.toPx()
+            val radius = (size.minDimension - stroke) / 2
+            drawCircle(
+                color = trackColor,
+                radius = radius,
+                style = Stroke(stroke)
+            )
+            val sweep = ((watts / 3500.0).coerceIn(0.0, 1.0) * 360f).toFloat()
+            drawArc(
+                color = activeColor,
+                startAngle = -90f,
+                sweepAngle = if (enabled) sweep else 0f,
+                useCenter = false,
+                style = Stroke(stroke, cap = StrokeCap.Round)
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "${watts.roundToInt()}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Text("W", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun MessageCard(text: String, isError: Boolean, icon: ImageVector) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+        contentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(text, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(
+    title: String,
+    body: String,
+    action: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text("$number", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(body, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+            if (action != null && onAction != null) {
+                Button(onClick = onAction) { Text(action) }
             }
         }
-        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
     }
 }

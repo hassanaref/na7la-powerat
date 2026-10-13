@@ -48,6 +48,8 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.12.1")
     implementation("androidx.compose.material3:material3:1.5.0-alpha16")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
     testImplementation("junit:junit:4.12")
     testImplementation("org.json:json:20180813")

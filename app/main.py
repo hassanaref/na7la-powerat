@@ -14,10 +14,12 @@ from app.bot.bot import start_bot, stop_bot
 from app.static_page import WEB_PAGE_HTML
 
 from app.api.legacy import router as legacy_router, is_authorized, verify_auth
+from app.api.v1.auth import router as auth_v1_router
 from app.api.v1.devices import router as devices_v1_router
 from app.api.v1.outlets import router as outlets_v1_router
 from app.api.v1.schedules import router as schedules_v1_router
 from app.api.v1.stats import router as stats_v1_router
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,9 +37,11 @@ async def lifespan(app: FastAPI):
     tcp_servers = await run_tcp_servers()
     poll_task = asyncio.create_task(poll_devices_task())
 
-    # 2. Start Scheduler & Energy Background Loops
+    # 2. Start Scheduler, Energy & Hardware Protection Background Loops
     sched_task = asyncio.create_task(scheduler_loop())
     energy_task = asyncio.create_task(energy_logger_loop())
+    from app.services.protection_service import protection_monitor_loop
+    prot_task = asyncio.create_task(protection_monitor_loop())
 
     # 3. Start Telegram Bot
     if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
@@ -57,6 +61,7 @@ async def lifespan(app: FastAPI):
     poll_task.cancel()
     sched_task.cancel()
     energy_task.cancel()
+    prot_task.cancel()
 
     # Close TCP servers
     for srv in tcp_servers:
@@ -91,6 +96,7 @@ async def index_page(request: Request):
 
 # Include API Routers
 app.include_router(legacy_router)
+app.include_router(auth_v1_router, prefix="/api/v1")
 app.include_router(devices_v1_router, prefix="/api/v1")
 app.include_router(outlets_v1_router, prefix="/api/v1")
 app.include_router(schedules_v1_router, prefix="/api/v1")

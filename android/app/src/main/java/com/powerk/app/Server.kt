@@ -15,26 +15,43 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.util.Locale
 
-/** Server address (PC / Raspberry / VPS running powerk.py), persisted in SharedPreferences. */
+/** Server & Account configuration, persisted in SharedPreferences. */
 object Server {
     private var prefs: SharedPreferences? = null
 
-    var host by mutableStateOf("")
+    var host by mutableStateOf("13.61.25.9")
         private set
     var port by mutableIntStateOf(8080)
         private set
     var token by mutableStateOf("")
         private set
+    var userName by mutableStateOf("")
+        private set
+    var userEmail by mutableStateOf("")
+        private set
+    var pinCode by mutableStateOf("")
+        private set
+    var biometricEnabled by mutableStateOf(false)
+        private set
+    var isUnlocked by mutableStateOf(true)
 
     fun init(context: Context) {
-        val p = context.applicationContext.getSharedPreferences("powerk", Context.MODE_PRIVATE)
+        val p = context.applicationContext.getSharedPreferences("na7la_powerat", Context.MODE_PRIVATE)
         prefs = p
-        host = p.getString("host", "").orEmpty()
+        host = p.getString("host", "13.61.25.9").orEmpty()
         port = p.getInt("port", 8080)
         token = p.getString("token", "").orEmpty()
+        userName = p.getString("user_name", "").orEmpty()
+        userEmail = p.getString("user_email", "").orEmpty()
+        pinCode = p.getString("pin_code", "").orEmpty()
+        biometricEnabled = p.getBoolean("biometric_enabled", false)
+
+        if (pinCode.isNotBlank() || biometricEnabled) {
+            isUnlocked = false
+        }
     }
 
-    fun save(newHost: String, newPort: Int, newToken: String) {
+    fun saveServer(newHost: String, newPort: Int, newToken: String) {
         host = newHost.trim()
         port = newPort.coerceIn(1, 65535)
         token = newToken.trim()
@@ -42,6 +59,26 @@ object Server {
             ?.putString("host", host)
             ?.putInt("port", port)
             ?.putString("token", token)
+            ?.apply()
+    }
+
+    fun saveUser(name: String, email: String, newToken: String) {
+        userName = name.trim()
+        userEmail = email.trim()
+        token = newToken.trim()
+        prefs?.edit()
+            ?.putString("user_name", userName)
+            ?.putString("user_email", userEmail)
+            ?.putString("token", token)
+            ?.apply()
+    }
+
+    fun saveSecurity(newPin: String, enableBiometric: Boolean) {
+        pinCode = newPin.trim()
+        biometricEnabled = enableBiometric
+        prefs?.edit()
+            ?.putString("pin_code", pinCode)
+            ?.putBoolean("biometric_enabled", biometricEnabled)
             ?.apply()
     }
 
@@ -57,7 +94,7 @@ object Lang {
     private var prefs: SharedPreferences? = null
 
     fun init(context: Context) {
-        val p = context.applicationContext.getSharedPreferences("powerk", Context.MODE_PRIVATE)
+        val p = context.applicationContext.getSharedPreferences("na7la_powerat", Context.MODE_PRIVATE)
         prefs = p
         code = p.getString("lang", "").orEmpty().ifBlank { null }
     }

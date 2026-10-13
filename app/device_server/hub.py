@@ -102,6 +102,8 @@ class DeviceHub:
                     self.sessions[mac] = session
                     logger.info(f"Device registered: {dev.name} (MAC: {mac}, IP: {ip}, FW: {fw})")
                     await self._emit("device_connected", mac, ip, model, fw)
+                    from app.services.protection_service import ProtectionService
+                    asyncio.create_task(ProtectionService.handle_cold_boot_surge_delay(mac))
                     asyncio.create_task(session.refresh())
                     continue
 
@@ -122,6 +124,9 @@ class DeviceHub:
 
                         session.got_getinfo.set()
                         await self._emit("state_updated", session.device.mac, session.device.snapshot())
+                        from app.services.protection_service import ProtectionService
+                        total_w = sum(r["power_w"] for r in records)
+                        asyncio.create_task(ProtectionService.check_overload_guard(session.device.mac, total_w))
                     continue
 
                 # 3. Power report (voltage in mV >= 50000)
@@ -131,6 +136,8 @@ class DeviceHub:
                         val = int(m_pow.group(2))
                         if val >= 50000:
                             session.device.voltage_v = round(val / 1000.0, 1)
+                            from app.services.protection_service import ProtectionService
+                            asyncio.create_task(ProtectionService.check_voltage_guard(session.device.mac, session.device.voltage_v))
                     continue
 
                 # 4. Wi-Fi RSSI query response
@@ -152,6 +159,8 @@ class DeviceHub:
                     logger.info(f"Hardware button pressed on {session.device.mac}: outlet {ch} -> {on}")
                     await self._emit("button_pressed", session.device.mac, ch, on)
                     await self._emit("state_updated", session.device.mac, session.device.snapshot())
+                    from app.services.protection_service import ProtectionService
+                    asyncio.create_task(ProtectionService.handle_button_event_child_lock(session.device.mac, ch, on))
                     continue
 
                 if ONOFF_ACK_RE.fullmatch(line):

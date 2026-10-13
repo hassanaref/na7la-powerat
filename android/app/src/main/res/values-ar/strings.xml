@@ -2,59 +2,105 @@
 <resources>
     <string name="app_name">نحلة باورات</string>
 
-    <string name="tab_plugs">الفيش</string>
+    <string name="tab_plugs">المقابس</string>
+    <string name="tab_protection">الحماية</string>
+    <string name="tab_setup">إضافة مشترك</string>
     <string name="tab_settings">الإعدادات</string>
-    <string name="splash_tagline">تحكم ذكي في المشترك الكوري</string>
+    <string name="splash_tagline">نحلة باورات 2.0 · نظام إدارة المشترك الكوري MTTL-W01</string>
 
     <string name="strip_name">مشترك نحلة باورات</string>
     <string name="strip_fw">الإصدار %1$s</string>
 
-    <string name="header_no_server">مفيش سيرفر متحدد</string>
-    <string name="header_online">‏%1$d متصل · %2$s</string>
-    <string name="header_known_offline">‏%1$d معروف · مش متصل</string>
-    <string name="header_waiting">مستني المشترك · %1$s</string>
+    <string name="header_no_server">لم يتم تحديد السيرفر</string>
+    <string name="header_online">%1$d متصل · %2$s</string>
+    <string name="header_known_offline">%1$d محفوظ · غير متصل</string>
+    <string name="header_waiting">في انتظار اتصال المشترك · %1$s</string>
     <string name="refresh">تحديث</string>
     <string name="connecting">جاري الاتصال بـ %1$s…</string>
 
-    <string name="no_server_title">مفيش سيرفر متحدد</string>
-    <string name="no_server_body">وجّه powerk للجهاز اللي شغّال عليه powerk.py — كمبيوتر، Raspberry Pi أو سيرفر VPS.</string>
-    <string name="no_strip_title">مفيش مشترك متصل</string>
-    <string name="no_strip_body">المشترك بيتصل بالسيرفر لوحده. اتأكد إنه متوصل بالكهربا، وعلى واي فاي 2.4 جيجاهرتز، ومتظبط على عنوان IP بتاع السيرفر.</string>
-    <string name="open_settings">افتح الإعدادات</string>
+    <string name="no_server_title">لم يتم تحديد السيرفر</string>
+    <string name="no_server_body">قم بضبط عنوان سيرفر نحلة باورات (AWS EC2 أو السيرفر المحلي الخاص بك).</string>
+    <string name="no_strip_title">لا يوجد مشترك مرتبط بحسابك</string>
+    <string name="no_strip_body">لم يتم العثور على أي مشترك مرتبط بحسابك. يمكنك إضافة مشترك جديد من تبويب "إضافة مشترك" أو ربط الماك الخاص بك.</string>
+    <string name="open_settings">فتح الإعدادات</string>
 
-    <string name="turn_all_on">شغّلهم كلهم</string>
-    <string name="turn_all_off">اطفيهم كلهم</string>
-    <string name="outlet_n">الفيشة %1$d</string>
-    <string name="state_on">شغالة</string>
-    <string name="state_off">مقفولة</string>
-    <string name="tile_on_detail">%1$s وات · %2$d°</string>
-    <string name="tile_off_detail">%1$d° · مش واصلالها كهربا</string>
-    <string name="watts_now">دلوقتي</string>
+    <string name="turn_all_on">تشغيل الكل</string>
+    <string name="turn_all_off">إطفاء الكل</string>
+    <string name="outlet_n">المخرج %1$d</string>
+    <string name="state_on">تشغيل</string>
+    <string name="state_off">إيقاف</string>
+    <string name="tile_on_detail">%1$s وات · %2$d°س</string>
+    <string name="tile_off_detail">%1$d°س · خامل</string>
+    <string name="watts_now">الآن</string>
     <string name="unit_watts">وات</string>
-    <string name="switch_outlet">بدّل الفيشة %1$d</string>
+    <string name="unit_volts">فولت</string>
+    <string name="unit_amps">أمبير</string>
+    <string name="unit_egp">ج.م</string>
+    <string name="switch_outlet">تبديل المخرج %1$d</string>
 
-    <string name="settings_title">الإعدادات</string>
-    <string name="server_title">السيرفر</string>
-    <string name="server_body">المكان اللي شغّال عليه powerk.py: كمبيوتر، Raspberry Pi أو سيرفر VPS. ضيف الـ Token لو السيرفر متاح من على الإنترنت.</string>
-    <string name="field_host">عنوان IP أو اسم السيرفر</string>
-    <string name="field_port">المنفذ</string>
-    <string name="field_token">الـ Token</string>
-    <string name="save">حفظ</string>
-    <string name="test">اختبار</string>
-    <string name="saved">اتحفظ</string>
-    <string name="connected_summary">متصل · %1$d مشترك، %2$d متصل</string>
-    <string name="open_web_ui">افتح الواجهة في المتصفح</string>
+    <!-- المشاهد السريعة -->
+    <string name="scenes_title">المشاهد السريعة (Scenes)</string>
+    <string name="scene_work">💻 وضع العمل</string>
+    <string name="scene_sleep">🌙 وضع النوم</string>
+    <string name="scene_cinema">🎬 وضع السينما</string>
+    <string name="scene_all_on">⚡ تشغيل الكل</string>
+    <string name="scene_all_off">🛑 إطفاء الكل</string>
+
+    <!-- محرك الحماية -->
+    <string name="protection_title">محرك الحماية الهندسية</string>
+    <string name="protection_subtitle">منظومة حماية ذاتية لحماية أجهزتك الحساسة من تذبذب الكهرباء</string>
+    <string name="voltage_guard">حماية تذبذب الفولت (Over/Under Voltage)</string>
+    <string name="voltage_guard_desc">فصل المشترك فوراً إذا انخفض الجهد أو ارتفع عن النطاق الآمن (الافتراضي: 190 – 245 فولت).</string>
+    <string name="overload_limit">الحماية من الحمل الزائد (وات)</string>
+    <string name="overload_desc">فصل جميع المقابس فوراً إذا تجاوز إجمالي الاستهلاك الحد الآمن (أقصى قدرة: 3200 وات).</string>
+    <string name="child_lock">قفل الأطفال (Child Lock)</string>
+    <string name="child_lock_desc">تعطيل الأزرار الفيزيائية على هيكل المشترك للتحكم حصرياً من الهاتف وبوت التليجرام.</string>
+    <string name="cold_boot_router">حماية عودة الكهرباء (Cold Boot Delay)</string>
+    <string name="cold_boot_desc">عند عودة الكهرباء بعد انقطاعها: يتم تشغيل مخرج الراوتر فوراً وتأخير باقي الأجهزة الحساسة.</string>
+    <string name="away_mode">وضع خارج المنزل (محاكاة التواجد)</string>
+    <string name="away_mode_desc">تشغيل وإطفاء الإضاءة عشوائياً ليلاً لمحاكاة وجود أشخاص داخل المنزل ومنع السرقة.</string>
+
+    <!-- معالج التهيئة المباشر -->
+    <string name="prov_title">تهيئة مشترك ذكي جديد</string>
+    <string name="prov_step1_title">1. الاتصال بشبكة المشترك (Hotspot)</string>
+    <string name="prov_step1_body">اضغط مطولاً على زر المشترك 5 ثوانٍ حتى يومض سريعاً، ثم اتصل بشبكته: TONLY_TAP_XXXXXXX (كلمة السر: LGU_XXXXXXX).</string>
+    <string name="prov_step2_title">2. إدخال بيانات شبكة الواي فاي المنزلية</string>
+    <string name="prov_ssid">اسم شبكة الواي فاي (2.4 GHz فقط)</string>
+    <string name="prov_password">كلمة سر الواي فاي</string>
+    <string name="prov_server_ip">عنوان السيرفر العام (مثال: 13.61.25.9)</string>
+    <string name="prov_btn_send">إرسال الإعدادات للمشترك عبر TCP</string>
+    <string name="prov_warning_special">⚠️ تحذير: فيرموير المشترك يتعطل إذا كانت كلمة السر تحتوي على * أو /. استخدم حروفاً وأرقاماً فقط!</string>
+    <string name="prov_cycle_reminder">⚠️ هام جداً: افصل المشترك من مقبس الحائط لمدة 20-30 ثانية لتفريغ المكثفات ثم أعد توصيله.</string>
+    <string name="prov_success">تم استلام الإعدادات وتأكيد الاتصال من المشترك بنجاح!</string>
+
+    <!-- الإعدادات والمصادقة -->
+    <string name="settings_title">الإعدادات والحساب</string>
+    <string name="server_title">الاتصال بالسيرفر السحابي</string>
+    <string name="server_body">الاتصال بسيرفر نحلة باورات على AWS EC2 أو السيرفر الخاص بك.</string>
+    <string name="field_host">عنوان السيرفر (IP أو Domain)</string>
+    <string name="field_port">المنفذ (Port)</string>
+    <string name="field_token">رمز الحساب (User Token)</string>
+    <string name="save">حفظ الإعدادات</string>
+    <string name="test">اختبار الاتصال</string>
+    <string name="saved">تم الحفظ بنجاح</string>
+    <string name="connected_summary">متصل · %1$d مشترك، %2$d متصل بالإنترنت</string>
+    <string name="open_web_ui">فتح لوحة التحكم في المتصفح</string>
+
+    <string name="account_title">حساب المستخدم وعزل البيانات</string>
+    <string name="btn_signup">إنشاء حساب جديد</string>
+    <string name="btn_login">تسجيل الدخول برمز موجود</string>
+    <string name="claim_strip">ربط مشترك بالماك (MAC)</string>
+    <string name="field_mac">عنوان الماك (مثال: 2CE032C6E5E7)</string>
+
+    <!-- الأمان البيومتري ورقم PIN -->
+    <string name="security_title">أمان التطبيق</string>
+    <string name="biometric_enable">طلب بصمة الإصبع أو الرقم السري عند الفتح</string>
+    <string name="enter_pin">أدخل الرقم السري المكون من 4 أرقام</string>
+    <string name="set_pin">تعيين رقم سري</string>
 
     <string name="language_title">اللغة</string>
-    <string name="lang_system">تلقائي</string>
+    <string name="lang_system">تلقائي (لغة الهاتف)</string>
     <string name="lang_english">English</string>
     <string name="lang_arabic">العربية</string>
-    <string name="command_failed">الأمر فشل</string>
-
-    <string name="setup_title">الإعداد لأول مرة</string>
-    <string name="setup_step_1">شغّل powerk.py على الجهاز اللي هيفضل شغّال، وسجّل عنوان الـ IP اللي هيظهرلك.</string>
-    <string name="setup_step_2">اكتب العنوان والمنفذ والـ Token هنا، وبعد كده دوس اختبار.</string>
-    <string name="setup_step_3">وجّه المشترك للجهاز ده مرة واحدة:</string>
-    <string name="setup_step_4">كده خلصنا — المشترك هيتصل لوحده. مش محتاج تغيّر DNS الراوتر ولا تفتح أي منافذ.</string>
-    <string name="setup_footer">تطبيق الأندرويد بيستخدم نفس واجهة JSON اللي بتستخدمها واجهة الويب.</string>
+    <string name="command_failed">فشل تنفيذ الأمر</string>
 </resources>
