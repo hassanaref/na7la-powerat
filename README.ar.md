@@ -63,8 +63,8 @@
 
 ### 2. تشغيل السيرفر
 ```bash
-git clone https://github.com/hassanaref/powerk.git
-cd powerk
+git clone https://github.com/hassanaref/na7la-powerat.git
+cd na7la-powerat
 
 python3 -m venv venv
 source venv/bin/activate

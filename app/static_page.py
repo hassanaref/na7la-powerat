@@ -62,8 +62,8 @@ WEB_PAGE_HTML = """<!doctype html>
 
   <div class="links-bar">
     <a href="/docs" target="_blank">📖 Swagger API Docs</a> · 
-    <a href="/powerk.apk">📱 تطبيق أندرويد APK</a> · 
-    <a href="https://github.com/hassanaref/powerk" target="_blank">GitHub Repo</a>
+    <a href="/na7la_powerat.apk">📱 تطبيق أندرويد APK</a> · 
+    <a href="https://github.com/hassanaref/na7la-powerat" target="_blank">GitHub Repo</a>
   </div>
 
   <script>

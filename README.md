@@ -92,8 +92,8 @@ You can download the pre-compiled Android APK directly to your phone:
 ### 2. Run the Server
 ```bash
 # Clone the repository
-git clone https://github.com/hassanaref/powerk.git
-cd powerk
+git clone https://github.com/hassanaref/na7la-powerat.git
+cd na7la-powerat
 
 # Set up virtual environment
 python3 -m venv venv

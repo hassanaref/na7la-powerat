@@ -59,7 +59,7 @@ This document details the production architecture and operational runbook for ru
 ### Step 1: Clone Repository & Virtual Environment
 ```bash
 sudo apt update && sudo apt install -y python3 python3-venv git
-git clone https://github.com/hassanaref/powerk.git /home/ubuntu/powerk
+git clone https://github.com/hassanaref/na7la-powerat.git /home/ubuntu/powerk
 cd /home/ubuntu/powerk
 
 python3 -m venv venv
