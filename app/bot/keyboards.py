@@ -29,11 +29,19 @@ def device_dashboard_keyboard(
     buttons = []
 
     # 4 Outlets rows
-    outlets_snap = {o["channel"]: o for o in snapshot.get("outlets", [])}
+    outlets_snap = {}
+    for o in snapshot.get("outlets", []):
+        ch = o["channel"] if isinstance(o, dict) else o.channel
+        outlets_snap[ch] = o
+
     for ch in range(1, 5):
         snap_o = outlets_snap.get(ch, {"on": False, "power_w": 0.0, "temp_c": 0})
-        is_on = snap_o["on"]
-        power_w = snap_o["power_w"]
+        if isinstance(snap_o, dict):
+            is_on = snap_o.get("on", False)
+            power_w = snap_o.get("power_w", 0.0)
+        else:
+            is_on = getattr(snap_o, "is_on", False)
+            power_w = getattr(snap_o, "power_w", 0.0)
 
         default_name = f"Outlet {ch}" if lang == "en" else f"مخرج {ch}"
         custom_name = outlets_db[ch].name if ch in outlets_db else default_name

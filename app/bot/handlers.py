@@ -64,6 +64,42 @@ async def _get_or_create_user(update: Update) -> User:
         return user
 
 
+def make_device_snapshot(dev: Device, hub_dev: Optional[Any] = None) -> dict:
+    if hub_dev:
+        return hub_dev.snapshot()
+    outlets_list = []
+    total_w = 0.0
+    total_kwh = 0.0
+    has_on = False
+    for o in dev.outlets:
+        outlets_list.append({
+            "channel": o.channel,
+            "on": o.is_on,
+            "power_w": o.power_w,
+            "energy_kwh": o.energy_kwh,
+            "temp_c": o.temp_c,
+        })
+        total_w += o.power_w
+        total_kwh += o.energy_kwh
+        if o.is_on:
+            has_on = True
+    return {
+        "mac": dev.mac,
+        "name": dev.name,
+        "model": dev.model,
+        "fw": dev.fw,
+        "ip": dev.ip,
+        "online": dev.mac in hub.sessions,
+        "on": has_on,
+        "power_w": round(total_w, 2),
+        "energy_kwh": round(total_kwh, 3),
+        "voltage": dev.voltage_v,
+        "current_a": 0.0,
+        "rssi": dev.rssi,
+        "outlets": outlets_list,
+    }
+
+
 async def _render_dashboard_text(mac: str, db_device: Device, snapshot: Dict[str, Any], lang: str = "en") -> str:
     online = snapshot.get("online", False)
     total_w = snapshot.get("power_w", 0.0)
@@ -163,8 +199,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if len(devices) == 1:
         dev = devices[0]
-        snap = hub.devices[dev.mac].snapshot() if dev.mac in hub.devices else dev.__dict__
-        snap["online"] = dev.mac in hub.sessions
+        snap = make_device_snapshot(dev, hub.devices.get(dev.mac))
         async with AsyncSessionLocal() as db:
             outlets_res = await db.execute(select(Outlet).where(Outlet.device_mac == dev.mac))
             outlets_db = {o.channel: o for o in outlets_res.scalars().all()}
@@ -219,7 +254,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             outlets_db = {o.channel: o for o in outlets_res.scalars().all()}
             multi = len(await DeviceService.get_all_devices(db, user.telegram_id)) > 1
 
-        snap = hub.devices[mac].snapshot() if mac in hub.devices else {"online": False, "outlets": []}
+        snap = make_device_snapshot(dev, hub.devices.get(mac))
         text = await _render_dashboard_text(mac, dev, snap, lang=lang)
         kb = device_dashboard_keyboard(mac, snap, outlets_db, multi_device=multi, lang=lang)
         await query.edit_message_text(text, reply_markup=kb, parse_mode=ParseMode.MARKDOWN)
@@ -242,7 +277,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             outlets_db = {o.channel: o for o in outlets_res.scalars().all()}
             multi = len(await DeviceService.get_all_devices(db, user.telegram_id)) > 1
 
-        snap = hub.devices[mac].snapshot() if mac in hub.devices else {"online": False, "outlets": []}
+        snap = make_device_snapshot(dev, hub.devices.get(mac))
         text = await _render_dashboard_text(mac, dev, snap, lang=lang)
         kb = device_dashboard_keyboard(mac, snap, outlets_db, multi_device=multi, lang=lang)
         try:
@@ -266,7 +301,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             outlets_db = {o.channel: o for o in outlets_res.scalars().all()}
             multi = len(await DeviceService.get_all_devices(db, user.telegram_id)) > 1
 
-        snap = hub.devices[mac].snapshot() if mac in hub.devices else {"online": False, "outlets": []}
+        snap = make_device_snapshot(dev, hub.devices.get(mac))
         text = await _render_dashboard_text(mac, dev, snap, lang=lang)
         kb = device_dashboard_keyboard(mac, snap, outlets_db, multi_device=multi, lang=lang)
         try:
@@ -318,7 +353,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             outlets_db = {o.channel: o for o in outlets_res.scalars().all()}
             multi = len(await DeviceService.get_all_devices(db, user.telegram_id)) > 1
 
-        snap = hub.devices[mac].snapshot() if mac in hub.devices else {"online": False, "outlets": []}
+        snap = make_device_snapshot(dev, hub.devices.get(mac))
         text = await _render_dashboard_text(mac, dev, snap, lang=lang)
         kb = device_dashboard_keyboard(mac, snap, outlets_db, multi_device=multi, lang=lang)
         await query.edit_message_text(text, reply_markup=kb, parse_mode=ParseMode.MARKDOWN)
