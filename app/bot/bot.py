@@ -33,6 +33,10 @@ def get_bot_app() -> Optional[Application]:
         _bot_app = builder.build()
 
         _bot_app.add_handler(CommandHandler("start", start_command))
+        _bot_app.add_handler(CommandHandler("en", start_command))
+        _bot_app.add_handler(CommandHandler("english", start_command))
+        _bot_app.add_handler(CommandHandler("ar", start_command))
+        _bot_app.add_handler(CommandHandler("arabic", start_command))
         _bot_app.add_handler(CallbackQueryHandler(callback_query_handler))
         _bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
