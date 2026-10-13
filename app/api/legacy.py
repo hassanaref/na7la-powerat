@@ -83,47 +83,52 @@ def verify_auth(request: Request):
 @router.get("/api/state")
 async def legacy_get_state(request: Request):
     user = await get_request_user(request)
-    if settings.API_TOKEN and not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="na7la: token required",
-            headers={"WWW-Authenticate": 'Basic realm="na7la"'}
-        )
 
     snap = hub.snapshot()
     snap["local_ip"] = settings.effective_local_ip
     snap["port"] = settings.DEVICE_PORT
 
-    # Strict multi-tenancy: filter devices if not admin
-    if user and not user.is_admin:
-        async with AsyncSessionLocal() as db:
-            shares_stmt = select(DeviceShare.device_mac).where(DeviceShare.shared_telegram_id == user.telegram_id)
-            shares_res = await db.execute(shares_stmt)
-            shared_macs = set(shares_res.scalars().all())
+    # Strict multi-tenancy:
+    # 1. Unauthenticated / anonymous users must NEVER see other people's devices
+    if not user:
+        snap["devices"] = []
+        return snap
 
-            stmt = select(Device.mac).where(
-                or_(
-                    Device.owner_telegram_id == user.telegram_id,
-                    Device.mac.in_(shared_macs)
-                )
+    # 2. Server admin bypass: sees all devices
+    if user.is_admin:
+        return snap
+
+    # 3. Regular users see ONLY their own claimed devices or shared devices
+    async with AsyncSessionLocal() as db:
+        shares_stmt = select(DeviceShare.device_mac).where(DeviceShare.shared_telegram_id == user.telegram_id)
+        shares_res = await db.execute(shares_stmt)
+        shared_macs = set(shares_res.scalars().all())
+
+        stmt = select(Device.mac).where(
+            or_(
+                Device.owner_telegram_id == user.telegram_id,
+                Device.mac.in_(shared_macs)
             )
-            res = await db.execute(stmt)
-            allowed_macs = set(res.scalars().all())
+        )
+        res = await db.execute(stmt)
+        allowed_macs = set(res.scalars().all())
 
-        snap["devices"] = [d for d in snap["devices"] if d.get("mac", "").upper() in allowed_macs]
-
+    snap["devices"] = [d for d in snap["devices"] if d.get("mac", "").upper() in allowed_macs]
     return snap
 
 
 @router.post("/api/onoff")
 async def legacy_post_onoff(request: Request, payload: LegacyOnOffRequest):
     user = await get_request_user(request)
-    if settings.API_TOKEN and not user:
-        raise HTTPException(status_code=401, detail={"error": "token required"})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error": "Authentication required. Please provide a user token."}
+        )
 
     mac = payload.mac.upper().replace(":", "").replace(".", "")
 
-    if user and not user.is_admin:
+    if not user.is_admin:
         async with AsyncSessionLocal() as db:
             await AuthService.verify_device_access(db, user, mac)
 

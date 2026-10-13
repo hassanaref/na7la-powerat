@@ -205,12 +205,46 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             outlets_db = {o.channel: o for o in outlets_res.scalars().all()}
 
         text = await _render_dashboard_text(dev.mac, dev, snap, lang=lang)
+        footer = "\n\n📱 *Android App Token:* `/token`" if lang == "en" else "\n\n📱 *لربط تطبيق الهاتف:* اضغط /token"
+        text += footer
         kb = device_dashboard_keyboard(dev.mac, snap, outlets_db, multi_device=False, lang=lang)
         await update.message.reply_text(text, reply_markup=kb, parse_mode=ParseMode.MARKDOWN)
     else:
         text = "⚡ *Your Registered Strips:*\nChoose a device to control:" if lang == "en" else "⚡ *المشتركات المسجلة بحسابك:*\nاختر المشترك الذي تريد التحكم به:"
+        footer = "\n\n📱 *Android App Token:* `/token`" if lang == "en" else "\n\n📱 *لربط تطبيق الهاتف:* اضغط /token"
+        text += footer
         kb = devices_menu_keyboard(devices, lang=lang)
         await update.message.reply_text(text, reply_markup=kb, parse_mode=ParseMode.MARKDOWN)
+
+
+async def token_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = await _get_or_create_user(update)
+    lang = get_user_lang(update)
+
+    if lang == "en":
+        text = (
+            f"🔑 *Your Account Token:*\n"
+            f"`{user.user_token}`\n\n"
+            f"📱 *How to connect the Android App:*\n"
+            f"1. Tap the token above to copy it.\n"
+            f"2. Open the **Na7la Powerat** app on your phone.\n"
+            f"3. Go to **Settings ⚙️**.\n"
+            f"4. Paste the token into the **Token** field and tap **Save**.\n\n"
+            f"🔒 *Your smart strips will appear securely on your phone, and no one else can control them.*"
+        )
+    else:
+        text = (
+            f"🔑 *رمز حسابك لربط تطبيق الهاتف (Account Token):*\n"
+            f"`{user.user_token}`\n\n"
+            f"📱 *طريقة ربط تطبيق الأندرويد:*\n"
+            f"1. اضغط على الرمز المكتوب أعلاه لنسخه بنقرة واحدة.\n"
+            f"2. افتح تطبيق **نحلة باورات (Na7la Powerat)** على هاتفك.\n"
+            f"3. توجه إلى تبويب **الإعدادات ⚙️**.\n"
+            f"4. الصق الرمز في خانة **رمز الحساب (Token)** ثم اضغط **حفظ**.\n\n"
+            f"🔒 *ستظهر جميع مشتركاتك في التطبيق فوراً، ولن يتمكن أي شخص آخر من رؤيتها أو التحكم بها نهائياً!*"
+        )
+
+    await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
 
 async def set_lang_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

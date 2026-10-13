@@ -54,8 +54,13 @@ WEB_PAGE_HTML = """<!doctype html>
     <a href="https://t.me/Na7laPoweratBot" target="_blank" class="master-btn" style="background:#0284c7;text-decoration:none">🤖 فتح بوت تليجرام</a>
   </header>
 
-  <div class="server-info" id="serverInfo">
-    <span>جاري الاتصال بالخادم...</span>
+  <div class="server-info" id="serverInfo" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <div id="serverDetails"><span>جاري الاتصال بالخادم...</span></div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="password" id="userTokenInput" placeholder="أدخل رمز حسابك (Token)..." style="padding:7px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#f8fafc;font-size:13px;width:220px;" onkeydown="if(event.key==='Enter')saveToken()">
+      <button onclick="saveToken()" style="padding:7px 14px;background:#38bdf8;border:none;border-radius:8px;font-weight:bold;cursor:pointer;color:#0f172a;">دخول</button>
+      <button onclick="clearToken()" style="padding:7px 10px;background:#475569;border:none;border-radius:8px;color:#fff;cursor:pointer;" title="مسح">✕</button>
+    </div>
   </div>
 
   <div id="devicesContainer"></div>
@@ -67,30 +72,76 @@ WEB_PAGE_HTML = """<!doctype html>
   </div>
 
   <script>
+    function getToken() {
+      return localStorage.getItem('user_token') || '';
+    }
+
+    function saveToken() {
+      const val = document.getElementById('userTokenInput').value.trim();
+      if (val) {
+        localStorage.setItem('user_token', val);
+        refresh();
+      }
+    }
+
+    function clearToken() {
+      localStorage.removeItem('user_token');
+      document.getElementById('userTokenInput').value = '';
+      refresh();
+    }
+
+    // Init token input field if saved
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = getToken();
+      if (saved) document.getElementById('userTokenInput').value = saved;
+    });
+
     const api = async (p, b) => {
-      const opts = b ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) } : {};
+      const token = getToken();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['X-User-Token'] = token;
+      }
+      const opts = b ? { method: 'POST', headers, body: JSON.stringify(b) } : { headers };
       const res = await fetch(p, opts);
       return res.json();
     };
 
     async function toggleOutlet(mac, outlet, on) {
-      await api('/api/onoff', { mac, outlet, on });
+      const res = await api('/api/onoff', { mac, outlet, on });
+      if (res.detail) {
+        alert(res.detail.error || res.detail || 'غير مصرح');
+      }
       await refresh();
     }
 
     function render(data) {
-      const sInfo = document.getElementById('serverInfo');
-      sInfo.innerHTML = `
-        <div><strong>عنوان الخادم:</strong> ${data.local_ip || '127.0.0.1'} | <strong>منفذ المشترك:</strong> TCP ${data.port}</div>
-        <div><strong>التليجرام:</strong> @Na7laPoweratBot</div>
+      const sDetails = document.getElementById('serverDetails');
+      sDetails.innerHTML = `
+        <div><strong>عنوان الخادم:</strong> ${data.local_ip || '127.0.0.1'} | <strong>المنفذ:</strong> TCP ${data.port}</div>
+        <div><strong>التليجرام:</strong> @Na7laPoweratBot (أرسل <code>/token</code> للحصول على رمزك)</div>
       `;
 
+      const token = getToken();
       const container = document.getElementById('devicesContainer');
+      if (!token) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center;padding:40px 20px;">
+            <h3>🔐 يرجى إدخال رمز حسابك (User Token)</h3>
+            <p style="color:var(--text-dim);margin-top:10px;line-height:1.8;">
+              لحماية خصوصيتك ولضمان عزل الأجهزة، لا يمكن عرض أو التحكم بأي مشترك بدون تسجيل الدخول.<br>
+              احصل على رمزك فوراً بإرسال أمر <code>/token</code> إلى بوت التليجرام <b>@Na7laPoweratBot</b> ثم الصقه في الخانة بالأعلى واضغط <b>دخول</b>.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
       if (!data.devices || data.devices.length === 0) {
         container.innerHTML = `
           <div class="card" style="text-align:center;padding:40px 20px;">
-            <h3>لا يوجد مشترك متصل حالياً</h3>
-            <p style="color:var(--text-dim);margin-top:10px;">قم بتوصيل المشترك بالكهرباء والواي فاي، وسيتصل تلقائياً بالمنفذ 10086.</p>
+            <h3>لا يوجد مشترك مربوط بحسابك حالياً</h3>
+            <p style="color:var(--text-dim);margin-top:10px;">قم بربط مشتركك عبر بوت التليجرام أو تطبيق الأندرويد، وسيظهر هنا تلقائياً.</p>
           </div>
         `;
         return;

@@ -6,7 +6,7 @@ from telegram.constants import ParseMode
 
 from app.config import settings
 from app.services.alert_service import set_telegram_sender
-from app.bot.handlers import start_command, callback_query_handler, message_handler
+from app.bot.handlers import start_command, callback_query_handler, message_handler, token_command
 
 logger = logging.getLogger("powerk.bot")
 
@@ -37,6 +37,9 @@ def get_bot_app() -> Optional[Application]:
         _bot_app.add_handler(CommandHandler("english", start_command))
         _bot_app.add_handler(CommandHandler("ar", start_command))
         _bot_app.add_handler(CommandHandler("arabic", start_command))
+        _bot_app.add_handler(CommandHandler("token", token_command))
+        _bot_app.add_handler(CommandHandler("app", token_command))
+        _bot_app.add_handler(CommandHandler("link", token_command))
         _bot_app.add_handler(CallbackQueryHandler(callback_query_handler))
         _bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
