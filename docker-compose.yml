@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  powerk:
+    build: .
+    container_name: powerk_backend
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+      - "10086:10086"
+    volumes:
+      - ./powerk.db:/app/powerk.db

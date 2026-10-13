@@ -5,11 +5,12 @@ __pycache__/
 *.py[cod]
 *.log
 
-# ---- secrets ----
+# ---- secrets & database ----
 # tokens / passwords / local credentials (pass them on the command line instead)
 *.secret
 *.token
 .env
+*.db
 
 # ---- Android build output ----
 android/.gradle/
