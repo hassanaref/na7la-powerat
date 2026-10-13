@@ -158,7 +158,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if lang == "en":
             welcome_text = (
-                f"👋 Welcome *{update.effective_user.first_name}* to **Powerk Smart Strip Bot** ⚡\n"
+                f"👋 Welcome *{update.effective_user.first_name}* to **Na7la Powerat Bot** 🐝⚡\n"
                 f"(Your smart control hub — replace Voltra with full outlet control, timers, and power monitoring!)\n\n"
                 f"No smart strip is linked to your account yet.\n"
             )
@@ -174,7 +174,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
         else:
             welcome_text = (
-                f"👋 أهلاً بك يا *{update.effective_user.first_name}* في بوت المشترك الذكي ⚡\n"
+                f"👋 أهلاً بك يا *{update.effective_user.first_name}* في **بوت نحلة باورات** 🐝⚡\n"
                 f"(البديل الكامل لتطبيق Voltra — تحكم بكل المخارج والمؤقتات وسجل الكهرباء)\n\n"
                 f"لم تقم بربط أي مشترك بحسابك بعد.\n"
             )

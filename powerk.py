@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""powerk - Modern Python Backend & Telegram Bot for LG U+ MTTL-W01 (Voltra Alternative).
+"""Na7la Powerat 2.0 (نحلة باورات) - Smart Power Strip Backend & Telegram Bot.
 
 Commands:
-  python powerk.py serve       Run FastAPI server + TCP 10086 device server + Telegram Bot (default)
+  python powerk.py serve       Run FastAPI server + TCP 10086/21197 device server + Telegram Bot (default)
   python powerk.py provision   Provision the strip with Wi-Fi & server IP (while in SoftAP mode)
   python powerk.py selftest    Run offline protocol, database, and backend validation
 """
@@ -176,7 +176,7 @@ def cmd_serve(args) -> int:
     bot_status = "ENABLED (@Na7laPoweratBot)" if (settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN) else "DISABLED"
 
     print("=" * 60)
-    print("  ⚡ POWERK 2.0 - SMART STRIP BACKEND & TELEGRAM BOT")
+    print("  🐝⚡ NA7LA POWERAT 2.0 - SMART STRIP BACKEND & BOT")
     print("=" * 60)
     print(f"  Web Dashboard:    http://{local_ip}:{settings.WEB_PORT}")
     print(f"  API Docs (Swagger): http://{local_ip}:{settings.WEB_PORT}/docs")

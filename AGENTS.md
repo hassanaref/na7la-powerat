@@ -1,7 +1,7 @@
-# AGENTS.md — Powerk Smart Strip Knowledge Base & Agent Guide
+# AGENTS.md — Na7la Powerat 2.0 (نحلة باورات) Knowledge Base & Agent Guide
 
 > **Welcome, AI Agent or Developer!**  
-> This file is the single source of truth for the **Powerk 2.0** ecosystem. It documents the reverse-engineered hardware protocols, network idiosyncrasies, firmware quirks, server architecture, and deployment procedures for the **LG U+ / Jinheung MTTL-W01** 4-outlet smart power strip (commonly known in Egypt and the Middle East as "المشترك الكوري" / The Korean Power Strip).
+> This file is the single source of truth for the **Na7la Powerat 2.0** (`na7la powerat` / نحلة باورات) ecosystem. It documents the reverse-engineered hardware protocols, network idiosyncrasies, firmware quirks, server architecture, and deployment procedures for the **LG U+ / Jinheung MTTL-W01** 4-outlet smart power strip (commonly known in Egypt and the Middle East as "المشترك الكوري" / The Korean Power Strip).
 
 ---
 
@@ -10,7 +10,7 @@
 ### Why This Project Exists
 Thousands of LG U+ / Jinheung smart power strips were imported into Egypt and other markets. Users originally had to rely on paid subscription apps (such as "Voltra") or complex Home Assistant / DNS redirection hacks.
 
-**Powerk 2.0** provides a complete, free, self-hosted, cloud-capable Python backend and bilingual Telegram Bot (`@Na7laPoweratBot`) that:
+**Na7la Powerat 2.0** provides a complete, free, self-hosted, cloud-capable Python backend and bilingual Telegram Bot (`@Na7laPoweratBot`) that:
 1. **Replaces Voltra entirely**: 4-outlet independent relay control, custom naming, countdown auto-off timers, scheduled automation routines, power/energy monitoring, and Egyptian electricity tariff cost tracking (EGP).
 2. **Requires zero router hacks**: No DNS poisoning, no NAT loopback, no firmware flashing. The strip dials out to the server via standard TCP.
 3. **100% Backwards Compatible**: Maintains `/api/state` and `/api/onoff` endpoints for the native Android client APK (`android/`).

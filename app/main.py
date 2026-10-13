@@ -23,12 +23,12 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
-logger = logging.getLogger("powerk.main")
+logger = logging.getLogger("na7la.main")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing Powerk Backend & Database...")
+    logger.info("Initializing Na7la Powerat Backend & Database...")
     await init_db()
 
     # 1. Start TCP Device Servers (Ports 10086 and 21197)
@@ -43,13 +43,13 @@ async def lifespan(app: FastAPI):
     if settings.TELEGRAM_ENABLED and settings.TELEGRAM_BOT_TOKEN:
         try:
             await start_bot()
-            logger.info("Telegram Bot started successfully.")
+            logger.info("Na7la Powerat Telegram Bot started successfully.")
         except Exception as e:
             logger.error(f"Failed to start Telegram Bot: {e}")
 
     yield
 
-    logger.info("Shutting down Powerk services...")
+    logger.info("Shutting down Na7la Powerat services...")
     # Stop Telegram Bot
     await stop_bot()
 
@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Powerk Smart Strip Backend",
+    title="Na7la Powerat Backend",
     description="Modern Async Python Backend with Telegram Bot control for LG U+ MTTL-W01 Power Strip (Voltra Alternative)",
     version="2.0.0",
     lifespan=lifespan

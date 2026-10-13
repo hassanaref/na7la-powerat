@@ -86,24 +86,28 @@ async def legacy_post_onoff(request: Request, payload: LegacyOnOffRequest):
 
 
 @router.get("/powerk.py")
-async def download_powerk_py():
-    path = BASE_DIR / "powerk.py"
+@router.get("/na7la.py")
+async def download_script():
+    path = BASE_DIR / "na7la.py"
     if not path.is_file():
-        raise HTTPException(status_code=404, detail="powerk.py not found")
+        path = BASE_DIR / "powerk.py"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Script not found")
     return FileResponse(
         path=path,
         media_type="text/x-python",
-        filename="powerk.py"
+        filename="na7la.py"
     )
 
 
 @router.get("/powerk.apk")
-async def download_powerk_apk():
+@router.get("/na7la_powerat.apk")
+async def download_apk():
     path = BASE_DIR / "android/app/build/outputs/apk/debug/app-debug.apk"
     if not path.is_file():
         raise HTTPException(status_code=404, detail={"error": "no APK built yet: cd android && gradlew assembleDebug"})
     return FileResponse(
         path=path,
         media_type="application/vnd.android.package-archive",
-        filename="powerk.apk"
+        filename="na7la_powerat.apk"
     )

@@ -3,7 +3,7 @@ WEB_PAGE_HTML = """<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Powerk & Voltra Hub</title>
+  <title>Na7la Powerat 🐝⚡ نحلة باورات</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -50,7 +50,7 @@ WEB_PAGE_HTML = """<!doctype html>
 </head>
 <body>
   <header>
-    <h1>⚡ Powerk & Voltra Hub <span class="badge">Backend Active</span></h1>
+    <h1>🐝⚡ Na7la Powerat <span class="badge">نحلة باورات</span></h1>
     <a href="https://t.me/Na7laPoweratBot" target="_blank" class="master-btn" style="background:#0284c7;text-decoration:none">🤖 فتح بوت تليجرام</a>
   </header>
 
@@ -62,8 +62,8 @@ WEB_PAGE_HTML = """<!doctype html>
 
   <div class="links-bar">
     <a href="/docs" target="_blank">📖 Swagger API Docs</a> · 
-    <a href="/powerk.apk">📱 تنزيل تطبيق أندرويد APK</a> · 
-    <a href="https://github.com/ahmedtohamy1/powerk" target="_blank">GitHub</a>
+    <a href="/powerk.apk">📱 تطبيق أندرويد APK</a> · 
+    <a href="https://github.com/hassanaref/powerk" target="_blank">GitHub Repo</a>
   </div>
 
   <script>

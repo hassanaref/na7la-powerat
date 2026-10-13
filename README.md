@@ -1,4 +1,4 @@
-# Powerk 2.0 ⚡ — Smart Power Strip Backend & Telegram Bot
+# Na7la Powerat 2.0 🐝⚡ (نحلة باورات) — Smart Power Strip Backend & Telegram Bot
 
 > **Complete open-source cloud backend, modern web dashboard, and bilingual Telegram bot replacing the commercial "Voltra" app for the LG U+ / Jinheung MTTL-W01 4-outlet smart strip (المشترك الكوري).**
 
@@ -6,13 +6,13 @@
 
 ---
 
-## ⚡ What is Powerk 2.0?
+## ⚡ What is Na7la Powerat?
 
-Powerk was originally created by Ahmed Tohamy as a lightweight local script. **Powerk 2.0** transforms it into a production-grade asynchronous cloud backend with multi-device management, bilingual Telegram bot control, recurring schedules, auto-off timers, live energy analytics with cost calculations in Egyptian Pounds (EGP), and hardware safety alarms.
+**Na7la Powerat 2.0** (`na7la powerat` / نحلة باورات) transforms the smart power strip into a production-grade asynchronous cloud backend with multi-device management, bilingual Telegram bot control, recurring schedules, auto-off timers, live energy analytics with cost calculations in Egyptian Pounds (EGP), and hardware safety alarms.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                 POWERK 2.0 ECOSYSTEM                            │
+│                             NA7LA POWERAT 2.0 ECOSYSTEM                         │
 ├─────────────────────────┬───────────────────────────────┬───────────────────────┤
 │    Telegram Bot         │        Web Dashboard          │      Android APK      │
 │  (@Na7laPoweratBot)     │   http://<SERVER_IP>:8080     │   Built with Jetpack  │

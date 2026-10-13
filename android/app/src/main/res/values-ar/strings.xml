@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">powerk</string>
+    <string name="app_name">نحلة باورات</string>
 
     <string name="tab_plugs">الفيش</string>
     <string name="tab_settings">الإعدادات</string>
-    <string name="splash_tagline">تحكم في الكهربا من عندك</string>
+    <string name="splash_tagline">تحكم ذكي في المشترك الكوري</string>
 
-    <string name="strip_name">المشترك الكوري</string>
+    <string name="strip_name">مشترك نحلة باورات</string>
     <string name="strip_fw">الإصدار %1$s</string>
 
     <string name="header_no_server">مفيش سيرفر متحدد</string>
