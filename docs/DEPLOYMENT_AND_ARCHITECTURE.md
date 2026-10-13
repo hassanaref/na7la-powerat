@@ -19,7 +19,11 @@ This document details the production architecture and operational runbook for ru
   │  │                 Powerk Backend                  │  │
   │  │                                                 │  │
   │  │  • FastAPI Web Server (:8080)                   │  │
-  │  │  • Telegram Bot Poller (@Na7laPoweratBot)      │  │
+  │  │     - Web Dashboard & Swagger UI                │  │
+  │  │     - User Token Auth & Multi-Tenancy Scoping   │  │
+  │  │     - Android APK Delivery (/na7la_powerat.apk) │  │
+  │  │  • Telegram Bot Poller (@Na7laPoweratBot)       │  │
+  │  │  • Autonomous Hardware Protection Engine        │  │
   │  │  • Scheduler & Energy Analytics Engine          │  │
   │  │  • SQLite DB (powerk.db via Async SQLAlchemy)   │  │
   │  │                                                 │  │

@@ -19,7 +19,17 @@ This guide covers setting up physical **LG U+ / Jinheung MTTL-W01** smart power 
    * **SSID**: `TONLY_TAP_XXXXXXX`
    * **Password**: `LGU_XXXXXXX` (the same 7 characters after `TONLY_TAP_`)
 
-### Step 3: Run the Provisioning Command
+### Step 3: Configure the Strip (Two Methods)
+
+#### Option A: In-App Provisioning Wizard (Android App - Recommended)
+1. Open the **Na7la Powerat** app on your phone.
+2. Go to the **Add Strip (إضافة مشترك)** tab.
+3. Enter your Home 2.4 GHz Wi-Fi SSID, Password, and Server IP.
+4. Connect your phone's Wi-Fi to `TONLY_TAP_XXXXXXX`.
+5. Tap **Send Wi-Fi Settings to Strip (إرسال الإعدادات للمشترك)**.
+6. The app opens a direct TCP socket to `192.168.1.1:30300`, sends the configuration, and starts the 25-second power-cycle countdown!
+
+#### Option B: Python CLI Command (Computer)
 Connect your laptop or mobile phone to the strip's Wi-Fi network `TONLY_TAP_XXXXXXX`.  
 *(Note: Your device will say "No internet", which is expected).*
 
@@ -34,12 +44,12 @@ Looking for the strip's setup service at 192.168.1.1:30300 ...
   up:ip:ip_ok
   up:connect:connect_ok
 
-Done. Reconnect this PC to your home Wi-Fi and start `python powerk.py`.
-The strip will connect to <SERVER_PUBLIC_IP>:10086 shortly.
+Done. Reconnect this PC to your home Wi-Fi.
+The strip will connect to <SERVER_PUBLIC_IP> shortly.
 ```
 
 ### Step 4: The 20-Second Power Cycle (Crucial Step!)
-After the script prints `Done`:
+After receiving confirmation:
 1. **Unplug the smart strip from the 220V wall outlet completely.**
 2. Wait **20 to 30 seconds** for all internal capacitors to drain.
 3. Plug it back into the wall outlet.

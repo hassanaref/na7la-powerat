@@ -171,29 +171,98 @@ Never access lazy relationships outside an active DB session.
 ```
 
 ### Directory Structure
-* `powerk.py`: CLI entry point (`serve`, `provision`, `selftest`).
+* `powerk.py` / `na7la.py`: CLI entry point (`serve`, `provision`, `selftest`).
 * `app/config.py`: Pydantic settings loading from `.env` or system environment.
-* `app/database.py`: Async SQLite engine with `aiosqlite`.
-* `app/models/`: SQLAlchemy 2.0 data models (`User`, `Device`, `Outlet`, `Schedule`, `Telemetry`).
+* `app/database.py`: Async SQLite engine with `aiosqlite` and dynamic column migration.
+* `app/models/`: SQLAlchemy 2.0 data models (`User`, `Device`, `Outlet`, `Schedule`, `DeviceShare`, `Scene`).
 * `app/device_server/`:
   * `protocol.py`: Regex parsers and command formatters for the `up:...` protocol.
-  * `session.py`: Asynchronous TCP socket connection manager with command locks.
-  * `hub.py`: Central device singleton registry and event emitter.
-  * `server.py`: Async TCP servers binding ports 10086 and 21197.
+  * `session.py`: Asynchronous TCP socket connection manager with command locks and current calibration.
+  * `hub.py`: Central device singleton registry, event emitter, and protection hooks.
+  * `server.py`: Async TCP servers binding ports 10086 and 21197 concurrently.
 * `app/bot/`:
   * `bot.py`: Telegram application runner with long polling.
   * `handlers.py`: Bilingual message and callback handlers (`/start`, `/en`, `/ar`, claiming, control).
   * `keyboards.py`: Interactive inline keyboard builders.
 * `app/services/`:
+  * `auth_service.py`: User token generation, validation, and multi-tenant device access verification (`verify_device_access`).
+  * `protection_service.py`: Autonomous hardware protection engine (current calibration, voltage guard, overload trip, cold boot surge router priority, child lock reversal, standby cutoffs).
   * `device_service.py`: Device claiming, pre-registration, outlet renaming.
   * `scheduler_service.py`: Auto-off countdowns and recurring schedules loop.
   * `energy_service.py`: kWh tracking and Egyptian electricity cost calculations (EGP).
   * `alert_service.py`: Telegram push notifications on state anomalies (overheat, overload, disconnect).
-* `app/api/`: REST endpoints and legacy backwards-compatibility routes.
+* `app/api/`:
+  * `v1/auth.py`: User signup, login, profile (`/me`), and strip claiming.
+  * `v1/devices.py`: User-scoped strip queries and protection settings (`/protection`).
+  * `v1/outlets.py`: Outlet toggle, rename, and smart configuration (`/smart`).
+  * `v1/schedules.py`: Active schedule management and countdown timers.
+  * `v1/stats.py`: Real-time energy analytics and cost breakdown.
+  * `legacy.py`: Scoped backwards-compatibility routes (`/api/state`, `/api/onoff`, `/na7la_powerat.apk`).
+* `android/`:
+  * `app/src/main/java/com/powerk/app/`:
+    * `Provisioning.kt`: In-app direct TCP socket wizard connecting to `192.168.1.1:30300`.
+    * `Security.kt`: Biometric fingerprint/face prompt and 4-digit PIN lock gate.
+    * `Server.kt`: User profile, token, server address, and preferences persistence.
+    * `Api.kt`: Scoped REST client handling auth, protection, telemetry, and control.
+    * `Ui.kt`: 4-tab Jetpack Compose Material 3 interface (Plugs, Protection, Setup, Settings).
 
 ---
 
-## 6. Production Deployment Runbook (AWS EC2)
+## 6. Multi-Tenancy & Data Isolation Model
+
+> **Core Rule**: Users must NEVER see or control other users' smart strips.
+
+1. **User Token Auth**: Every user is assigned a 64-character hex `user_token`. Requests must provide this token via `X-User-Token`, `Authorization: Bearer <token>`, or `?user_token=`.
+2. **Device Claiming**: Physical strips are claimed by MAC address. If User A has claimed a device, User B's attempt to claim it is rejected with `403 Forbidden: Device is already linked to another user account`.
+3. **Scoped Responses**:
+   * `GET /api/state` and `GET /api/v1/devices` inspect the caller's token and return **only** strips where `owner_telegram_id == user.telegram_id` or user has a granted `DeviceShare`.
+   * `POST /api/onoff` and `POST /api/v1/outlets/toggle` strictly check ownership via `AuthService.verify_device_access`. Unauthorized callers receive `403 Forbidden`.
+4. **Admin Bypass**: The server master token `settings.API_TOKEN` grants superuser admin access for maintenance.
+
+---
+
+## 7. Autonomous Hardware Protection Engine
+
+The `ProtectionService` runs 24/7 on the server, enforcing hardware rules even when the phone or app is disconnected:
+1. **Current Calibration**: Raw telemetry noise offset is subtracted: $\max(0.0, I_{\text{raw}} - 0.019\text{ A})$.
+2. **Over/Under Voltage Guard**: Default safe window $190\text{--}245\text{ V}$. If line voltage exceeds bounds, all relays are immediately tripped OFF and a Telegram alert is dispatched.
+3. **Overload Cutoff**: Trips all relays if combined active load exceeds $3200\text{ W}$.
+4. **Surge & Cold Boot Delay**: Upon AC power restoration after a blackout, router outlet (Channel 1) turns ON immediately to establish Wi-Fi, while sensitive electronics remain OFF or delayed.
+5. **Child Lock (قفل الأطفال)**: Reverses hardware button presses on the physical strip (`up:event:onoff`) so relays can only be toggled via software.
+6. **Auto-Off & Standby Cutoffs**: Background loop turns off outlets after configured timer durations or when connected devices enter low-wattage standby below the threshold.
+
+---
+
+## 8. Android App Overhaul & APK Compilation Runbook
+
+### Direct In-App TCP Provisioning
+* Connects directly to `192.168.1.1:30300` in SoftAP mode.
+* Validates credentials, strictly disallowing `*`, `/`, or `:` (preventing Linux `sed` configuration corruption).
+* Dispatches `up:ip:<SERVER_IP>\r\n` and `up:connect:<SSID>:<PASS>\r\n`.
+* Prompts the user with a 25-second power-cycle countdown timer to discharge capacitors before reboot.
+
+### How to Compile the Android APK
+Prerequisites:
+* **JDK 17**: Microsoft OpenJDK 17 (`C:\Program Files\Microsoft\jdk-17.0.20.101-hotspot`).
+* **Android SDK**: Android Platform 37 (`cmdline-tools\latest`).
+
+Build Command:
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-17.0.20.101-hotspot"
+$env:ANDROID_HOME = "C:\Users\hassa\AppData\Local\Android\Sdk"
+$env:Path = "$env:JAVA_HOME\bin;" + $env:Path
+cd android
+.\gradlew assembleDebug
+```
+Output path: `android/app/build/outputs/apk/debug/app-debug.apk` (~20.3 MB).
+
+### Direct Download URL from Production Server
+The AWS EC2 backend serves the compiled APK at:
+* **Direct Download**: `http://13.61.25.9:8080/na7la_powerat.apk`
+
+---
+
+## 9. Production Deployment Runbook (AWS EC2)
 
 ### Server Details
 * **Host**: Ubuntu 24.04 LTS (`ubuntu@13.61.25.9`)
@@ -220,13 +289,14 @@ sudo tcpdump -i any -n "port 10086 or port 21197"
 
 ### Required AWS Security Group Inbound Rules
 * **Port 22 (SSH)**: Admin access.
-* **Port 8080 (HTTP)**: Web dashboard and REST API.
+* **Port 8080 (HTTP)**: Web dashboard, REST API, and APK downloads.
 * **Port 10086 (TCP)**: Strip device communication (FW 0.1.54).
 * **Port 21197 (TCP)**: Strip device communication (FW 0.1.55+).
 
 ---
 
-## 7. Adding Features or Debugging for Future Agents
+## 10. Adding Features or Debugging for Future Agents
 1. **Always run selftest**: Run `python powerk.py selftest` before making commits. It validates protocol regex parsers, database migrations, scheduler creation, and energy calculators without requiring a physical device.
-2. **Never break legacy API**: The native Android application relies on `GET /api/state` and `GET /api/onoff?ch=<X>&val=<on|off>`. Keep these endpoints intact in `app/api/legacy.py`.
+2. **Never break legacy API**: The native Android application relies on `GET /api/state` and `POST /api/onoff`. Keep these endpoints intact in `app/api/legacy.py` while respecting user tokens.
 3. **Avoid Telegram 409 Conflict**: Only run one instance of the bot application at a time. The systemd service on EC2 is the production polling instance.
+

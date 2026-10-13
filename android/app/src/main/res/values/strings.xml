@@ -21,7 +21,7 @@
     <string name="no_server_title">No server set</string>
     <string name="no_server_body">Connect to your Na7la Powerat server (AWS EC2, Raspberry Pi, or PC).</string>
     <string name="no_strip_title">No strips found</string>
-    <string name="no_strip_body">No smart strips linked to your account. Use the 'Add Strip' tab to provision a new strip or claim an existing one.</string>
+    <string name="no_strip_body">No smart strips linked to your account. Use the \'Add Strip\' tab to provision a new strip or claim an existing one.</string>
     <string name="open_settings">Open settings</string>
 
     <string name="turn_all_on">Turn all ON</string>

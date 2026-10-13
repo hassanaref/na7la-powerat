@@ -37,30 +37,47 @@
 
 ---
 
-## ✨ Features (Full Voltra Alternative)
+## 📱 Download Android APK
+You can download the pre-compiled Android APK directly to your phone:
+👉 **[Download Na7la Powerat 2.0 APK](http://13.61.25.9:8080/na7la_powerat.apk)** (`http://13.61.25.9:8080/na7la_powerat.apk`)
+
+---
+
+## ✨ Features (Full Voltra Alternative & Hardware Protection)
 
 1. **No Router Hacks or Port Forwarding at Home**: The strip initiates an outbound TCP socket to the server. Works across NAT, 4G, and dynamic home IPs without router DNS poisoning or DNAT.
 2. **Dual-Port Support (All Firmware Revisions)**:
    - Port **`10086`**: Tested on firmware `0.1.54-1.0.66`.
    - Port **`21197`**: Tested on firmware `0.1.55-1.0.141` and `0.1.55-1.0.146`.
-3. **Bilingual Telegram Bot (`@Na7laPoweratBot`)**:
+3. **In-App Direct TCP Provisioning Wizard (`android/`)**:
+   - Provision strips directly from your Android phone without needing a computer or Python!
+   - Connects to `192.168.1.1:30300`, validates Wi-Fi credentials, blocks illegal characters (`*`, `/`), and guides you through the 25-second power-cycle.
+4. **Strict Multi-Tenancy & Data Privacy**:
+   - Scoped user accounts with unique 64-character `user_token` authentication.
+   - Users only ever see and control their own strips. Anti-hijacking ownership enforcement prevents unauthorized claims.
+5. **Autonomous Hardware Protection Engine**:
+   - **Current Calibration**: Automatic removal of noise offset ($0.019\text{ A}$).
+   - **Over/Under Voltage Guard**: Default $190\text{--}245\text{ V}$ safety window trips all relays on line spikes or brownouts.
+   - **Surge & Cold Boot Delay**: Prioritizes router socket (Channel 1) immediately on power recovery while delaying sensitive appliances.
+   - **Overload Cutoff**: Cuts power if active load exceeds $3200\text{ W}$.
+   - **Child Lock (قفل الأطفال)**: Reverses hardware button presses so outlets can only be switched via mobile app or bot.
+6. **Bilingual Telegram Bot (`@Na7laPoweratBot`) & Native App UI**:
    - Multi-device claiming via MAC address (`/start`).
    - 4 independent outlet toggle buttons with live power ratings.
-   - Master switch (All ON / All OFF).
-   - Custom outlet naming (e.g. "Router", "PC", "Charger").
+   - Quick Scenes (Work Mode, Sleep Mode, Cinema Mode, All ON, All OFF).
+   - Biometric fingerprint/face and PIN app lock.
+   - Custom outlet naming and icons (Router, PC, TV, Lamp, Charger, etc.).
    - Smart countdown timers (auto-off in 15m, 30m, 1h, 2h, etc.).
    - Daily scheduled automation routines (turn on/off at specific times).
-   - Language selector (`English` / `العربية`).
-4. **Energy Analytics & Cost Estimation (EGP)**:
+7. **Energy Analytics & Cost Estimation (EGP)**:
    - Real-time active wattage (W) per outlet and total.
    - Cumulative energy consumption (kWh).
    - Cost tracking in Egyptian Pounds (EGP) based on residential electricity tariff tiers.
-5. **Push Safety Alarms**:
+8. **Push Safety Alarms**:
    - Power outage & connection loss alerts.
    - Power restored alerts.
    - Overload warning (>3500W or >15.5A).
    - Overheat warning (>65°C).
-6. **100% Backward Compatible**: Retains `/api/state` and `/api/onoff` endpoints for the native Android client APK.
 
 ---
 
